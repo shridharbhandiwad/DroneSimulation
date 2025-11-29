@@ -42,6 +42,9 @@ If you prefer to install ONNX Runtime separately:
 | Document | Purpose |
 |----------|---------|
 | **[WINDOWS_BUILD_SOLUTION.md](WINDOWS_BUILD_SOLUTION.md)** | **START HERE** - Overview of the solution |
+| **[VISUAL_STUDIO_FIX_QUICK_GUIDE.md](VISUAL_STUDIO_FIX_QUICK_GUIDE.md)** | **Visual Studio error** - Quick fix guide |
+| [WINDOWS_TROUBLESHOOTING_INDEX.md](WINDOWS_TROUBLESHOOTING_INDEX.md) | Index of all common Windows errors |
+| [VISUAL_STUDIO_NOT_FOUND_SOLUTION.md](VISUAL_STUDIO_NOT_FOUND_SOLUTION.md) | Complete Visual Studio troubleshooting |
 | [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) | Complete setup guide with troubleshooting |
 | [WINDOWS_BUILD_FIX.md](WINDOWS_BUILD_FIX.md) | Technical details of the fix |
 | [WINDOWS_FIX_SUMMARY.md](WINDOWS_FIX_SUMMARY.md) | Quick reference guide |
@@ -70,6 +73,20 @@ If you prefer to install ONNX Runtime separately:
 
 ## 🐛 Troubleshooting
 
+### Error: Visual Studio Not Found
+```
+CMake Error: Generator Visual Studio 17 2022 could not find any instance of Visual Studio.
+```
+
+**Quick Fix:**
+```powershell
+.\run_demo.ps1  # Auto-detects your Visual Studio version
+```
+
+**Detailed Solutions:**
+- [VISUAL_STUDIO_FIX_QUICK_GUIDE.md](VISUAL_STUDIO_FIX_QUICK_GUIDE.md) - Quick solutions
+- [VISUAL_STUDIO_NOT_FOUND_SOLUTION.md](VISUAL_STUDIO_NOT_FOUND_SOLUTION.md) - Complete guide
+
 ### Error: Execution Policy
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -80,6 +97,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 Remove-Item -Recurse -Force cpp\build
 .\run_demo.ps1
 ```
+
+### Error Index
+See [WINDOWS_TROUBLESHOOTING_INDEX.md](WINDOWS_TROUBLESHOOTING_INDEX.md) for all common errors
 
 ### Need More Help?
 See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) troubleshooting section
