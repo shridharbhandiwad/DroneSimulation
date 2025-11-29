@@ -54,16 +54,66 @@ cpp/build/
 *.exe
 *.out
 *.app
+*.lib
+*.dll
+*.exp
+*.ilk
+*.pdb
 
 # CMake
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
+*.cmake
+!CMakeLists.txt
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.dir/
+x64/
+Win32/
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
 
-# OS
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db-shm
+*.VC.db-wal
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.ipch
+*.iobj
+*.ipdb
+
+# Windows
 .DS_Store
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+ehthumbs.db
+ehthumbs_vista.db
 
 # Logs
 *.log
