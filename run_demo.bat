@@ -98,15 +98,78 @@ if errorlevel 1 (
     goto :summary
 )
 
-REM Detect Visual Studio
+REM Detect Visual Studio - check multiple editions and verify C++ tools
 set VS_GENERATOR=
-if exist "C:\Program Files\Microsoft Visual Studio\2022" (
+
+REM Check Visual Studio 2022
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" (
     set VS_GENERATOR=-G "Visual Studio 17 2022" -A x64
-) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019" (
-    set VS_GENERATOR=-G "Visual Studio 16 2019" -A x64
-) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017" (
-    set VS_GENERATOR=-G "Visual Studio 15 2017" -A x64
+    echo Detected Visual Studio 2022 ^(Community edition^)
+    goto :vs_found
 )
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 17 2022" -A x64
+    echo Detected Visual Studio 2022 ^(Professional edition^)
+    goto :vs_found
+)
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 17 2022" -A x64
+    echo Detected Visual Studio 2022 ^(Enterprise edition^)
+    goto :vs_found
+)
+
+REM Check Visual Studio 2019
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 16 2019" -A x64
+    echo Detected Visual Studio 2019 ^(Community edition^)
+    goto :vs_found
+)
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 16 2019" -A x64
+    echo Detected Visual Studio 2019 ^(Professional edition^)
+    goto :vs_found
+)
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 16 2019" -A x64
+    echo Detected Visual Studio 2019 ^(Enterprise edition^)
+    goto :vs_found
+)
+
+REM Check Visual Studio 2017
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 15 2017" -A x64
+    echo Detected Visual Studio 2017 ^(Community edition^)
+    goto :vs_found
+)
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 15 2017" -A x64
+    echo Detected Visual Studio 2017 ^(Professional edition^)
+    goto :vs_found
+)
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
+    set VS_GENERATOR=-G "Visual Studio 15 2017" -A x64
+    echo Detected Visual Studio 2017 ^(Enterprise edition^)
+    goto :vs_found
+)
+
+REM No Visual Studio found
+echo.
+echo [91mWARNING: No Visual Studio installation with C++ tools detected![0m
+echo.
+echo [93mVisual Studio is required to build C++ components.[0m
+echo.
+echo [96mSolutions:[0m
+echo   1. Install Visual Studio 2022 Community ^(Free^):
+echo      https://visualstudio.microsoft.com/downloads/
+echo      Make sure to select 'Desktop development with C++' workload
+echo.
+echo   2. Or use MinGW as an alternative:
+echo      See VISUAL_STUDIO_NOT_FOUND_SOLUTION.md for details
+echo.
+echo [93mSkipping C++ build...[0m
+goto :summary
+
+:vs_found
 
 echo Configuring with CMake...
 cmake .. %VS_GENERATOR% >nul 2>&1

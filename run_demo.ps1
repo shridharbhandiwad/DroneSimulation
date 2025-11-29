@@ -166,19 +166,66 @@ if ($buildSuccess -ne $false -and $OnnxRuntimeDir -ne "") {
     }
 
     if ($buildSuccess -ne $false) {
-        # Detect Visual Studio
+        # Detect Visual Studio - check multiple editions and verify C++ tools
         $vsGenerator = ""
-        if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022") {
-            $vsGenerator = "-G `"Visual Studio 17 2022`" -A x64"
-            Write-Host "Detected Visual Studio 2022" -ForegroundColor Green
-        } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2019") {
-            $vsGenerator = "-G `"Visual Studio 16 2019`" -A x64"
-            Write-Host "Detected Visual Studio 2019" -ForegroundColor Green
-        } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2017") {
-            $vsGenerator = "-G `"Visual Studio 15 2017`" -A x64"
-            Write-Host "Detected Visual Studio 2017" -ForegroundColor Green
-        } else {
-            Write-Host "No Visual Studio detected, trying default generator..." -ForegroundColor Yellow
+        $vsEditions = @("Community", "Professional", "Enterprise", "BuildTools")
+        
+        # Check for Visual Studio 2022 (VS 17)
+        $vs2022Found = $false
+        foreach ($edition in $vsEditions) {
+            $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\$edition\VC\Auxiliary\Build\vcvarsall.bat"
+            if (Test-Path $vsPath) {
+                $vsGenerator = "-G `"Visual Studio 17 2022`" -A x64"
+                Write-Host "Detected Visual Studio 2022 ($edition edition)" -ForegroundColor Green
+                $vs2022Found = $true
+                break
+            }
+        }
+        
+        # Check for Visual Studio 2019 (VS 16) if 2022 not found
+        if (-not $vs2022Found) {
+            foreach ($edition in $vsEditions) {
+                $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\$edition\VC\Auxiliary\Build\vcvarsall.bat"
+                if (Test-Path $vsPath) {
+                    $vsGenerator = "-G `"Visual Studio 16 2019`" -A x64"
+                    Write-Host "Detected Visual Studio 2019 ($edition edition)" -ForegroundColor Green
+                    $vs2022Found = $true
+                    break
+                }
+            }
+        }
+        
+        # Check for Visual Studio 2017 (VS 15) if 2019 not found
+        if (-not $vs2022Found) {
+            foreach ($edition in $vsEditions) {
+                $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2017\$edition\VC\Auxiliary\Build\vcvarsall.bat"
+                if (Test-Path $vsPath) {
+                    $vsGenerator = "-G `"Visual Studio 15 2017`" -A x64"
+                    Write-Host "Detected Visual Studio 2017 ($edition edition)" -ForegroundColor Green
+                    $vs2022Found = $true
+                    break
+                }
+            }
+        }
+        
+        if ($vsGenerator -eq "") {
+            Write-Host ""
+            Write-Host "WARNING: No Visual Studio installation with C++ tools detected!" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Visual Studio is required to build C++ components." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Solutions:" -ForegroundColor Cyan
+            Write-Host "  1. Install Visual Studio 2022 Community (Free):" -ForegroundColor White
+            Write-Host "     https://visualstudio.microsoft.com/downloads/" -ForegroundColor Gray
+            Write-Host "     Make sure to select 'Desktop development with C++' workload" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "  2. Or use MinGW as an alternative:" -ForegroundColor White
+            Write-Host "     See VISUAL_STUDIO_NOT_FOUND_SOLUTION.md for details" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "Skipping C++ build..." -ForegroundColor Yellow
+            Pop-Location
+            Pop-Location
+            $buildSuccess = $false
         }
 
         Write-Host "Configuring with CMake..."
