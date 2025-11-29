@@ -116,7 +116,7 @@ class TrajectoryPredictor:
         
     def load_model(self, model_path: str):
         """Load model weights"""
-        checkpoint = torch.load(model_path, map_location=self.device)
+        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         
         if 'normalization' in checkpoint:

@@ -29,7 +29,7 @@ def export_to_onnx(model_path: str = '../models/best_model.pth',
         output_size=6
     ).to(device)
     
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     
