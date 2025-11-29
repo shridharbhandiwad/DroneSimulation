@@ -218,5 +218,27 @@ This project supports the following platforms:
 - **All Platforms**: See [QUICKSTART.md](QUICKSTART.md)
 - **C++ Details**: See [cpp/README_CPP.md](cpp/README_CPP.md)
 
+## Troubleshooting
+
+### ONNX Export Issues
+
+If you encounter errors during ONNX export (e.g., "No Adapter From Version 18 for Split"), the issue has been fixed:
+
+1. **Verify your setup**:
+   ```bash
+   python python/check_onnx_setup.py
+   ```
+
+2. **See the fix documentation**: [ONNX_FIX_SUMMARY.md](ONNX_FIX_SUMMARY.md)
+
+The export now uses ONNX opset version 17 (modern and well-supported) with constant folding disabled to avoid optimization bugs.
+
+### Other Common Issues
+
+- **Missing dependencies**: Run `pip install -r requirements.txt`
+- **CUDA errors**: Add `device='cpu'` if you don't have a GPU
+- **Model not found**: Run `python train_model.py` first to train the model
+- **C++ build errors**: See [cpp/README_CPP.md](cpp/README_CPP.md) for platform-specific instructions
+
 ## License
 MIT License
