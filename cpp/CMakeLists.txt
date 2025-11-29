@@ -11,8 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Windows-specific: Add common installation paths
 if(WIN32)
     list(APPEND ONNX_SEARCH_PATHS
+        "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.17.1"
+        "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.16.3"
+        "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.16.0"
         "$ENV{ProgramFiles}/onnxruntime"
-        "$ENV{ProgramFiles\(x86\)}/onnxruntime"
+        "$ENV{ProgramFiles(x86)}/onnxruntime"
         "C:/Program Files/onnxruntime"
         "C:/onnxruntime"
         "${CMAKE_SOURCE_DIR}/../onnxruntime"

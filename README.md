@@ -30,6 +30,11 @@ This system generates drone trajectories using ML (LSTM) based on initial positi
 
 ## Installation
 
+### Quick Start Guides
+
+- **Windows Users:** See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for complete setup with automatic ONNX Runtime installation
+- **Linux/macOS Users:** Follow the instructions below
+
 ### Python Setup
 
 **Linux/macOS:**
@@ -59,14 +64,22 @@ sudo apt-get install libonnxruntime-dev
 ```
 
 **Windows:**
+
+**Option 1: Automatic (Recommended)**
+```powershell
+.\setup_onnx_windows.ps1
+```
+This will automatically download and setup ONNX Runtime for Windows.
+
+**Option 2: Manual**
 1. Download ONNX Runtime from [GitHub Releases](https://github.com/microsoft/onnxruntime/releases)
-2. Extract to `C:\onnxruntime` (or another location)
+2. Extract to workspace directory or `C:\onnxruntime`
 3. When building, specify the path:
 ```batch
 cmake .. -G "Visual Studio 17 2022" -A x64 -DONNXRUNTIME_DIR=C:\onnxruntime
 ```
 
-See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for detailed Windows instructions.
+See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for detailed Windows instructions and troubleshooting.
 
 ## Usage
 

@@ -91,86 +91,146 @@ Pop-Location
 Write-Host ""
 Write-Host "Step 4: Building C++ code..." -ForegroundColor Cyan
 Write-Host "------------------------------------"
-Push-Location cpp
 
-if (-not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path "build" | Out-Null
+# Check if ONNX Runtime is installed
+$OnnxRuntimeDir = ""
+$OnnxSearchPaths = @(
+    "$PSScriptRoot\onnxruntime-win-x64-1.17.1",
+    "$PSScriptRoot\onnxruntime-win-x64-1.16.3",
+    "$PSScriptRoot\onnxruntime-win-x64-1.16.0"
+)
+
+foreach ($path in $OnnxSearchPaths) {
+    if (Test-Path $path) {
+        $OnnxRuntimeDir = $path
+        Write-Host "Found ONNX Runtime at: $OnnxRuntimeDir" -ForegroundColor Green
+        break
+    }
 }
 
-Push-Location build
-
-# Check if CMake is available
-try {
-    $cmakeVersion = cmake --version 2>&1 | Select-String -Pattern "cmake version"
-    Write-Host "Found: $cmakeVersion" -ForegroundColor Green
-} catch {
-    Write-Host "Warning: CMake is not installed. Skipping C++ build." -ForegroundColor Yellow
-    Write-Host "Install CMake from https://cmake.org/download/ to build C++ components." -ForegroundColor Yellow
-    Pop-Location
-    Pop-Location
-    $buildSuccess = $false
+if ($OnnxRuntimeDir -eq "") {
+    Write-Host "ONNX Runtime not found. Setting up..." -ForegroundColor Yellow
+    Write-Host ""
+    
+    # Run setup script
+    if (Test-Path "$PSScriptRoot\setup_onnx_windows.ps1") {
+        & "$PSScriptRoot\setup_onnx_windows.ps1"
+        
+        if ($LASTEXITCODE -eq 0) {
+            # Check again for ONNX Runtime
+            foreach ($path in $OnnxSearchPaths) {
+                if (Test-Path $path) {
+                    $OnnxRuntimeDir = $path
+                    break
+                }
+            }
+            
+            if ($OnnxRuntimeDir -eq "") {
+                Write-Host "Warning: ONNX Runtime setup completed but directory not found." -ForegroundColor Yellow
+                Write-Host "Skipping C++ build. See cpp\README_WINDOWS.md for manual setup." -ForegroundColor Yellow
+                $buildSuccess = $false
+            }
+        } else {
+            Write-Host "Warning: ONNX Runtime setup failed. Skipping C++ build." -ForegroundColor Yellow
+            Write-Host "See cpp\README_WINDOWS.md for manual installation instructions." -ForegroundColor Yellow
+            $buildSuccess = $false
+        }
+    } else {
+        Write-Host "Warning: setup_onnx_windows.ps1 not found. Skipping C++ build." -ForegroundColor Yellow
+        Write-Host "See cpp\README_WINDOWS.md for manual installation instructions." -ForegroundColor Yellow
+        $buildSuccess = $false
+    }
+    
+    Write-Host ""
 }
 
-if ($buildSuccess -ne $false) {
-    # Detect Visual Studio
-    $vsGenerator = ""
-    if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022") {
-        $vsGenerator = "-G `"Visual Studio 17 2022`" -A x64"
-        Write-Host "Detected Visual Studio 2022" -ForegroundColor Green
-    } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2019") {
-        $vsGenerator = "-G `"Visual Studio 16 2019`" -A x64"
-        Write-Host "Detected Visual Studio 2019" -ForegroundColor Green
-    } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2017") {
-        $vsGenerator = "-G `"Visual Studio 15 2017`" -A x64"
-        Write-Host "Detected Visual Studio 2017" -ForegroundColor Green
-    } else {
-        Write-Host "No Visual Studio detected, trying default generator..." -ForegroundColor Yellow
+if ($buildSuccess -ne $false -and $OnnxRuntimeDir -ne "") {
+    Push-Location cpp
+
+    if (-not (Test-Path "build")) {
+        New-Item -ItemType Directory -Path "build" | Out-Null
     }
 
-    Write-Host "Configuring with CMake..."
-    if ($vsGenerator -ne "") {
-        $cmakeCmd = "cmake .. $vsGenerator"
-        Invoke-Expression $cmakeCmd 2>&1 | Out-Null
-    } else {
-        cmake .. 2>&1 | Out-Null
-    }
+    Push-Location build
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Warning: CMake configuration failed." -ForegroundColor Yellow
-        Write-Host "This is OK if ONNX Runtime is not installed." -ForegroundColor Yellow
-        Write-Host "See cpp\README_CPP.md for installation instructions." -ForegroundColor Yellow
+    # Check if CMake is available
+    try {
+        $cmakeVersion = cmake --version 2>&1 | Select-String -Pattern "cmake version"
+        Write-Host "Found: $cmakeVersion" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: CMake is not installed. Skipping C++ build." -ForegroundColor Yellow
+        Write-Host "Install CMake from https://cmake.org/download/ to build C++ components." -ForegroundColor Yellow
         Pop-Location
         Pop-Location
         $buildSuccess = $false
-    } else {
-        Write-Host "Building..."
-        cmake --build . --config Release 2>&1 | Out-Null
+    }
+
+    if ($buildSuccess -ne $false) {
+        # Detect Visual Studio
+        $vsGenerator = ""
+        if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022") {
+            $vsGenerator = "-G `"Visual Studio 17 2022`" -A x64"
+            Write-Host "Detected Visual Studio 2022" -ForegroundColor Green
+        } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2019") {
+            $vsGenerator = "-G `"Visual Studio 16 2019`" -A x64"
+            Write-Host "Detected Visual Studio 2019" -ForegroundColor Green
+        } elseif (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2017") {
+            $vsGenerator = "-G `"Visual Studio 15 2017`" -A x64"
+            Write-Host "Detected Visual Studio 2017" -ForegroundColor Green
+        } else {
+            Write-Host "No Visual Studio detected, trying default generator..." -ForegroundColor Yellow
+        }
+
+        Write-Host "Configuring with CMake..."
+        Write-Host "ONNX Runtime directory: $OnnxRuntimeDir" -ForegroundColor Gray
         
+        if ($vsGenerator -ne "") {
+            $cmakeCmd = "cmake .. $vsGenerator -DONNXRUNTIME_DIR=`"$OnnxRuntimeDir`""
+            Write-Host "Running: $cmakeCmd" -ForegroundColor Gray
+            Invoke-Expression $cmakeCmd
+        } else {
+            cmake .. "-DONNXRUNTIME_DIR=$OnnxRuntimeDir"
+        }
+
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: C++ build failed." -ForegroundColor Yellow
-            Write-Host "This is OK if ONNX Runtime is not installed." -ForegroundColor Yellow
-            Write-Host "See cpp\README_CPP.md for installation instructions." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Warning: CMake configuration failed." -ForegroundColor Yellow
+            Write-Host "See cpp\README_WINDOWS.md for troubleshooting." -ForegroundColor Yellow
             Pop-Location
             Pop-Location
             $buildSuccess = $false
         } else {
-            Write-Host "✓ C++ code built successfully" -ForegroundColor Green
-            
-            # Step 5: Run C++ demo
             Write-Host ""
-            Write-Host "Step 5: Running C++ demo..." -ForegroundColor Cyan
-            Write-Host "------------------------------------"
+            Write-Host "Building..."
+            cmake --build . --config Release
             
-            if (Test-Path "Release\drone_trajectory_cpp.exe") {
-                .\Release\drone_trajectory_cpp.exe
-            } elseif (Test-Path "drone_trajectory_cpp.exe") {
-                .\drone_trajectory_cpp.exe
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host ""
+                Write-Host "Warning: C++ build failed." -ForegroundColor Yellow
+                Write-Host "See cpp\README_WINDOWS.md for troubleshooting." -ForegroundColor Yellow
+                Pop-Location
+                Pop-Location
+                $buildSuccess = $false
             } else {
-                Write-Host "Warning: C++ executable not found" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "✓ C++ code built successfully" -ForegroundColor Green
+                
+                # Step 5: Run C++ demo
+                Write-Host ""
+                Write-Host "Step 5: Running C++ demo..." -ForegroundColor Cyan
+                Write-Host "------------------------------------"
+                
+                if (Test-Path "Release\drone_trajectory_cpp.exe") {
+                    .\Release\drone_trajectory_cpp.exe
+                } elseif (Test-Path "drone_trajectory_cpp.exe") {
+                    .\drone_trajectory_cpp.exe
+                } else {
+                    Write-Host "Warning: C++ executable not found" -ForegroundColor Yellow
+                }
+                
+                Pop-Location
+                Pop-Location
             }
-            
-            Pop-Location
-            Pop-Location
         }
     }
 }
