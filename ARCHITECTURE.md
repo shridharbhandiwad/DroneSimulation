@@ -169,7 +169,7 @@ Save to Disk
 ```
 PyTorch Model (.pth)
     ↓
-ONNX Export (opset 11)
+ONNX Export (opset 17)
     ↓
 Verification
     ↓
@@ -181,9 +181,9 @@ ONNX Model (.onnx)
 ```
 
 **Optimizations:**
-- Constant folding
-- Dynamic batch size
-- Operator fusion
+- Dynamic batch size support
+- Operator fusion (where applicable)
+- Note: Constant folding is disabled to avoid optimization bugs in onnxscript
 
 ### 6. C++ Real-Time Predictor
 
