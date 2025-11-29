@@ -4,6 +4,7 @@
 
 #include "drone_trajectory.h"
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <chrono>
 #include <thread>
