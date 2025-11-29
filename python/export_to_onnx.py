@@ -44,22 +44,23 @@ def export_to_onnx(model_path: str = '../models/best_model.pth',
     print(f"Input shape: {dummy_input.shape}")
     
     # Export to ONNX
-    # Using opset_version 17 to avoid version conversion issues
-    # Disable constant folding to avoid optimization bugs
+    # Using opset_version 18 (latest stable version)
+    # Using dynamo=False to use the legacy exporter (more stable)
     torch.onnx.export(
         model,
         dummy_input,
         output_path,
         export_params=True,
-        opset_version=17,
-        do_constant_folding=False,  # Disabled to avoid optimization errors
+        opset_version=18,
+        do_constant_folding=True,
         input_names=['input_sequence'],
         output_names=['output', 'hidden_state'],
         dynamic_axes={
             'input_sequence': {0: 'batch_size'},
             'output': {0: 'batch_size'}
         },
-        verbose=False
+        verbose=False,
+        dynamo=False  # Use legacy exporter for better stability
     )
     
     print(f"Model successfully exported to {output_path}")

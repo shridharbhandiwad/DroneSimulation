@@ -224,14 +224,14 @@ This project supports the following platforms:
 
 If you encounter errors during ONNX export (e.g., "No Adapter From Version 18 for Split"), the issue has been fixed:
 
-1. **Verify your setup**:
-   ```bash
-   python python/check_onnx_setup.py
-   ```
+1. **Quick Fix Guide**: [ONNX_FIX_QUICK_GUIDE.md](ONNX_FIX_QUICK_GUIDE.md) - Start here!
 
-2. **See the fix documentation**: [ONNX_FIX_SUMMARY.md](ONNX_FIX_SUMMARY.md)
+2. **Detailed Documentation**: 
+   - [ONNX_FIX_COMPLETE.md](ONNX_FIX_COMPLETE.md) - Complete fix summary
+   - [ONNX_EXPORT_FIX_SUMMARY.md](ONNX_EXPORT_FIX_SUMMARY.md) - Technical details
+   - [ONNX_FIX_DIFF.md](ONNX_FIX_DIFF.md) - Before/after comparison
 
-The export now uses ONNX opset version 17 (modern and well-supported) with constant folding disabled to avoid optimization bugs.
+**What was fixed**: The export now uses ONNX opset version 18 with the legacy exporter (`dynamo=False`) for maximum stability. This avoids version conversion errors and optimizer bugs.
 
 ### Other Common Issues
 
