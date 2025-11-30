@@ -154,6 +154,12 @@ class DroneSimulationWindow(QMainWindow):
         # Generate initial trajectory
         self.generate_new_trajectory()
         
+        # Initialize drone model position
+        if self.current_trajectory is not None:
+            initial_pos = self.current_trajectory['positions'][0]
+            initial_vel = self.current_trajectory['velocities'][0]
+            self.update_drone_model_position(initial_pos, initial_vel)
+        
     def setup_ui(self):
         """Setup the user interface"""
         central_widget = QWidget()
@@ -228,7 +234,7 @@ class DroneSimulationWindow(QMainWindow):
         """)
         legend_text = """<b>Legend:</b><br>
 <span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #26a69a;'>●</span> <b>Waypoints</b> (Teal)<br>
+<span style='color: #505050;'>●</span> <b>Waypoints</b> (Dark Gray)<br>
 <span style='color: #ab47bc;'>●</span> <b>User Waypoints</b> (Purple)<br>
 <span style='color: #ffc107;'>●</span> <b>Current Target</b> (Gold)<br>
 <span style='color: #ff6f00;'>━</span> <b>Trail</b> (Orange)<br>
@@ -846,7 +852,7 @@ class DroneSimulationWindow(QMainWindow):
         # Waypoint connection lines
         self.waypoint_connections = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 0.4),  # Semi-transparent teal
+            color=(0.30, 0.30, 0.30, 0.4),  # Semi-transparent dark gray
             width=2.0,
             antialias=True,
             mode='line_strip'
@@ -871,27 +877,14 @@ class DroneSimulationWindow(QMainWindow):
         )
         self.plot_widget.addItem(self.velocity_vector)
         
-        # Drone marker with glow effect (multiple layers)
-        self.drone_marker_glow = gl.GLScatterPlotItem(
-            pos=np.array([[0, 0, 5]]),
-            color=(0.20, 0.60, 0.86, 0.3),
-            size=35,
-            pxMode=True
-        )
-        self.plot_widget.addItem(self.drone_marker_glow)
+        # Create 3D drone model with propellers
+        self.create_drone_model()
+        self.propeller_rotation = 0.0  # Track propeller rotation angle
         
-        self.drone_marker = gl.GLScatterPlotItem(
-            pos=np.array([[0, 0, 5]]),
-            color=(0.20, 0.60, 0.86, 1.0),
-            size=22,
-            pxMode=True
-        )
-        self.plot_widget.addItem(self.drone_marker)
-        
-        # Waypoint markers with glow (teal/turquoise)
+        # Waypoint markers with glow (dark gray/charcoal)
         self.waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 0.25),
+            color=(0.25, 0.25, 0.25, 0.25),
             size=35,
             pxMode=True
         )
@@ -899,7 +892,7 @@ class DroneSimulationWindow(QMainWindow):
         
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 1.0),
+            color=(0.20, 0.20, 0.20, 1.0),
             size=24,
             pxMode=True
         )
@@ -971,6 +964,228 @@ class DroneSimulationWindow(QMainWindow):
             antialias=True
         )
         self.plot_widget.addItem(z_axis)
+    
+    def create_drone_model(self):
+        """Create a 3D drone model with body, arms, and propellers"""
+        # Drone body (center sphere)
+        md = gl.MeshData.sphere(rows=10, cols=10, radius=0.8)
+        self.drone_body = gl.GLMeshItem(
+            meshdata=md,
+            color=(0.2, 0.5, 0.8, 1.0),
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.drone_body)
+        
+        # Drone arms (4 cylinders extending from center)
+        self.drone_arms = []
+        arm_positions = [
+            (1, 0, 0),   # Front
+            (-1, 0, 0),  # Back
+            (0, 1, 0),   # Right
+            (0, -1, 0)   # Left
+        ]
+        
+        for pos in arm_positions:
+            # Create arm mesh
+            arm_mesh = self.create_cylinder_mesh(length=2.0, radius=0.15)
+            arm = gl.GLMeshItem(
+                meshdata=arm_mesh,
+                color=(0.3, 0.3, 0.3, 1.0),
+                smooth=True,
+                shader='shaded',
+                glOptions='opaque'
+            )
+            self.drone_arms.append((arm, pos))
+            self.plot_widget.addItem(arm)
+        
+        # Propellers (4 sets of 2 blades each)
+        self.propellers = []
+        for pos in arm_positions:
+            # Two blades per propeller
+            blade1 = self.create_propeller_blade()
+            blade2 = self.create_propeller_blade()
+            
+            blade1_item = gl.GLMeshItem(
+                meshdata=blade1,
+                color=(0.1, 0.1, 0.1, 0.9),
+                smooth=True,
+                shader='shaded',
+                glOptions='translucent'
+            )
+            blade2_item = gl.GLMeshItem(
+                meshdata=blade2,
+                color=(0.1, 0.1, 0.1, 0.9),
+                smooth=True,
+                shader='shaded',
+                glOptions='translucent'
+            )
+            
+            self.plot_widget.addItem(blade1_item)
+            self.plot_widget.addItem(blade2_item)
+            
+            # Store blade items with their position
+            self.propellers.append({
+                'blade1': blade1_item,
+                'blade2': blade2_item,
+                'position': pos
+            })
+    
+    def create_cylinder_mesh(self, length=2.0, radius=0.15, segments=8):
+        """Create a cylinder mesh for drone arms"""
+        # Create cylinder vertices
+        verts = []
+        faces = []
+        
+        # Create rings
+        for i in range(2):  # Two rings (start and end)
+            z = (i - 0.5) * length
+            for j in range(segments):
+                angle = 2 * np.pi * j / segments
+                x = radius * np.cos(angle)
+                y = radius * np.sin(angle)
+                verts.append([x, y, z])
+        
+        # Create faces
+        for j in range(segments):
+            next_j = (j + 1) % segments
+            # Two triangles per face
+            faces.append([j, next_j, j + segments])
+            faces.append([next_j, next_j + segments, j + segments])
+        
+        # Add caps
+        center_start = len(verts)
+        verts.append([0, 0, -length/2])
+        center_end = len(verts)
+        verts.append([0, 0, length/2])
+        
+        for j in range(segments):
+            next_j = (j + 1) % segments
+            faces.append([center_start, next_j, j])
+            faces.append([center_end, j + segments, next_j + segments])
+        
+        verts = np.array(verts)
+        faces = np.array(faces)
+        
+        md = gl.MeshData(vertexes=verts, faces=faces)
+        return md
+    
+    def create_propeller_blade(self):
+        """Create a single propeller blade mesh"""
+        # Simple rectangular blade with slight curve
+        verts = np.array([
+            # Top surface
+            [-1.2, -0.15, 0.05],
+            [1.2, -0.15, 0.05],
+            [1.2, 0.15, 0.05],
+            [-1.2, 0.15, 0.05],
+            # Bottom surface
+            [-1.2, -0.15, -0.05],
+            [1.2, -0.15, -0.05],
+            [1.2, 0.15, -0.05],
+            [-1.2, 0.15, -0.05],
+        ])
+        
+        faces = np.array([
+            # Top
+            [0, 1, 2], [0, 2, 3],
+            # Bottom
+            [4, 6, 5], [4, 7, 6],
+            # Sides
+            [0, 4, 5], [0, 5, 1],
+            [1, 5, 6], [1, 6, 2],
+            [2, 6, 7], [2, 7, 3],
+            [3, 7, 4], [3, 4, 0],
+        ])
+        
+        md = gl.MeshData(vertexes=verts, faces=faces)
+        return md
+    
+    def update_drone_model_position(self, position, velocity):
+        """Update drone model position and orientation"""
+        # Update body position
+        transform = np.eye(4)
+        transform[:3, 3] = position
+        self.drone_body.setTransform(transform)
+        
+        # Calculate orientation from velocity
+        if np.linalg.norm(velocity) > 0.1:
+            # Yaw angle (rotation around Z axis)
+            yaw = np.arctan2(velocity[1], velocity[0])
+            
+            # Pitch angle (tilt based on horizontal velocity)
+            horizontal_speed = np.sqrt(velocity[0]**2 + velocity[1]**2)
+            pitch = np.arctan2(velocity[2], horizontal_speed) * 0.3  # Reduced tilt
+        else:
+            yaw = 0
+            pitch = 0
+        
+        # Update arms
+        for arm, arm_pos in self.drone_arms:
+            # Rotate arm position based on yaw
+            angle = np.arctan2(arm_pos[1], arm_pos[0])
+            rotated_angle = angle + yaw
+            
+            arm_world_x = position[0] + 1.5 * np.cos(rotated_angle)
+            arm_world_y = position[1] + 1.5 * np.sin(rotated_angle)
+            arm_world_z = position[2]
+            
+            # Create transformation matrix for arm
+            arm_transform = np.eye(4)
+            
+            # Rotation matrix for arm orientation
+            c = np.cos(rotated_angle)
+            s = np.sin(rotated_angle)
+            arm_transform[0, 0] = c
+            arm_transform[0, 1] = -s
+            arm_transform[1, 0] = s
+            arm_transform[1, 1] = c
+            
+            # Position
+            arm_transform[:3, 3] = [arm_world_x, arm_world_y, arm_world_z]
+            
+            arm.setTransform(arm_transform)
+        
+        # Update propellers with rotation
+        self.propeller_rotation += 30.0  # Degrees per frame
+        if self.propeller_rotation > 360:
+            self.propeller_rotation -= 360
+        
+        for i, prop in enumerate(self.propellers):
+            arm_pos = prop['position']
+            
+            # Calculate propeller world position
+            angle = np.arctan2(arm_pos[1], arm_pos[0])
+            rotated_angle = angle + yaw
+            
+            prop_world_x = position[0] + 2.5 * np.cos(rotated_angle)
+            prop_world_y = position[1] + 2.5 * np.sin(rotated_angle)
+            prop_world_z = position[2]
+            
+            # Blade 1 rotation
+            blade1_transform = np.eye(4)
+            rot_angle1 = np.radians(self.propeller_rotation)
+            c1 = np.cos(rot_angle1)
+            s1 = np.sin(rot_angle1)
+            blade1_transform[0, 0] = c1
+            blade1_transform[0, 1] = -s1
+            blade1_transform[1, 0] = s1
+            blade1_transform[1, 1] = c1
+            blade1_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
+            prop['blade1'].setTransform(blade1_transform)
+            
+            # Blade 2 rotation (90 degrees offset)
+            blade2_transform = np.eye(4)
+            rot_angle2 = np.radians(self.propeller_rotation + 90)
+            c2 = np.cos(rot_angle2)
+            s2 = np.sin(rot_angle2)
+            blade2_transform[0, 0] = c2
+            blade2_transform[0, 1] = -s2
+            blade2_transform[1, 0] = s2
+            blade2_transform[1, 1] = c2
+            blade2_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
+            prop['blade2'].setTransform(blade2_transform)
     
     def update_animations(self):
         """Update animated elements like pulsing markers"""
@@ -1362,9 +1577,8 @@ class DroneSimulationWindow(QMainWindow):
         wp_idx = min(wp_indices[self.current_step], len(waypoints) - 1)
         current_wp = waypoints[wp_idx]
         
-        # Update drone marker with glow
-        self.drone_marker.setData(pos=np.array([pos]))
-        self.drone_marker_glow.setData(pos=np.array([pos]))
+        # Update 3D drone model with rotation and position
+        self.update_drone_model_position(pos, vel)
         
         # Update trail effect
         if self.show_trail and self.current_step > 0:
