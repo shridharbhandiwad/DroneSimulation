@@ -611,6 +611,12 @@ class DroneSimulationWindow(QMainWindow):
         # Apply theme colors to all 3D scene elements
         self.apply_theme_to_3d_scene()
         
+        # Update waypoint marker colors
+        self.update_waypoint_colors()
+        
+        # Update user waypoint marker colors
+        self.update_user_waypoint_markers()
+        
         # Update waypoint labels with appropriate colors
         self.update_waypoint_labels()
     
