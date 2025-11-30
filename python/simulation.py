@@ -764,7 +764,7 @@ class DroneSimulationWindow(QMainWindow):
                 padding: 10px 17px 8px 19px;
             }
             
-            /* Play button - green accent */
+            /* Play button - green accent (standard play convention) */
             QPushButton#playButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #66bb6a, stop:1 #4caf50);
@@ -776,62 +776,7 @@ class DroneSimulationWindow(QMainWindow):
                 border: 1px solid #43a047;
             }
             
-            /* Reset button - orange accent */
-            QPushButton#resetButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffa726, stop:1 #ff9800);
-            }
-            
-            QPushButton#resetButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffb74d, stop:1 #ffa726);
-                border: 1px solid #f57c00;
-            }
-            
-            /* Random trajectory button - purple accent */
-            QPushButton#newTrajButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ab47bc, stop:1 #9c27b0);
-            }
-            
-            QPushButton#newTrajButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ba68c8, stop:1 #ab47bc);
-                border: 1px solid #8e24aa;
-            }
-            
-            /* Generate button - teal accent */
-            QPushButton#generateButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #26a69a, stop:1 #009688);
-            }
-            
-            QPushButton#generateButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4db6ac, stop:1 #26a69a);
-                border: 1px solid #00897b;
-            }
-            
-            /* Apply button - indigo accent */
-            QPushButton#applyButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #5c6bc0, stop:1 #3f51b5);
-            }
-            
-            QPushButton#applyButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #7986cb, stop:1 #5c6bc0);
-                border: 1px solid #3949ab;
-            }
-            
-            QPushButton#applyButton:disabled {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #bdbdbd, stop:1 #9e9e9e);
-                color: #e0e0e0;
-                border: 1px solid #757575;
-            }
-            
-            /* Remove button - red accent */
+            /* Remove button - red accent (destructive action warning) */
             QPushButton#removeButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #ef5350, stop:1 #f44336);
@@ -843,16 +788,12 @@ class DroneSimulationWindow(QMainWindow):
                 border: 1px solid #e53935;
             }
             
-            /* Clear button - grey accent */
-            QPushButton#clearButton {
+            /* Disabled button styling */
+            QPushButton#applyButton:disabled {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #78909c, stop:1 #607d8b);
-            }
-            
-            QPushButton#clearButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #90a4ae, stop:1 #78909c);
-                border: 1px solid #546e7a;
+                    stop:0 #bdbdbd, stop:1 #9e9e9e);
+                color: #e0e0e0;
+                border: 1px solid #757575;
             }
             
             /* Slider styling */
@@ -1061,7 +1002,7 @@ class DroneSimulationWindow(QMainWindow):
                 padding: 10px 17px 8px 19px;
             }
             
-            /* Play button - green accent */
+            /* Play button - green accent (standard play convention) */
             QPushButton#playButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #4a8f4a, stop:1 #357a38);
@@ -1073,62 +1014,7 @@ class DroneSimulationWindow(QMainWindow):
                 border: 1px solid #2d6a30;
             }
             
-            /* Reset button - orange accent */
-            QPushButton#resetButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #cc7a1a, stop:1 #b36200);
-            }
-            
-            QPushButton#resetButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #dc8a2a, stop:1 #c37210);
-                border: 1px solid #a35200;
-            }
-            
-            /* Random trajectory button - purple accent */
-            QPushButton#newTrajButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #8b3a9b, stop:1 #732283);
-            }
-            
-            QPushButton#newTrajButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #9b4aab, stop:1 #833293);
-                border: 1px solid #631a73;
-            }
-            
-            /* Generate button - teal accent */
-            QPushButton#generateButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #1a8679, stop:1 #006e61);
-            }
-            
-            QPushButton#generateButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #2a9689, stop:1 #107e71);
-                border: 1px solid #005e51;
-            }
-            
-            /* Apply button - indigo accent */
-            QPushButton#applyButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a5ba0, stop:1 #2f3b85);
-            }
-            
-            QPushButton#applyButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #5a6bb0, stop:1 #3f4b95);
-                border: 1px solid #1f2b75;
-            }
-            
-            QPushButton#applyButton:disabled {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a4a4a, stop:1 #3a3a3a);
-                color: #7a7a7a;
-                border: 1px solid #2a2a2a;
-            }
-            
-            /* Remove button - red accent */
+            /* Remove button - red accent (destructive action warning) */
             QPushButton#removeButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #bf3530, stop:1 #a42a26);
@@ -1140,16 +1026,12 @@ class DroneSimulationWindow(QMainWindow):
                 border: 1px solid #941f1e;
             }
             
-            /* Clear button - grey accent */
-            QPushButton#clearButton {
+            /* Disabled button styling */
+            QPushButton#applyButton:disabled {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #5a6a7c, stop:1 #404d5b);
-            }
-            
-            QPushButton#clearButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #6a7a8c, stop:1 #505d6b);
-                border: 1px solid #303d4b;
+                    stop:0 #4a4a4a, stop:1 #3a3a3a);
+                color: #7a7a7a;
+                border: 1px solid #2a2a2a;
             }
             
             /* Slider styling */
