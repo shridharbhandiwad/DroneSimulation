@@ -165,6 +165,7 @@ class DroneSimulationWindow(QMainWindow):
         view_title.setStyleSheet("""
             color: #1e3a5f; 
             padding: 8px;
+            margin-left: 2px;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #f5f1e8, stop:1 #ffffff);
             border-radius: 6px;
