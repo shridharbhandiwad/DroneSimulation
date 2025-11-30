@@ -215,12 +215,6 @@ class SettingsDialog(QDialog):
             self.parent_window.show_target_line = self.target_line_checkbox.isChecked()
             self.parent_window.trail_length = self.trail_length_spin.value()
             
-            # Update checkboxes in main window
-            self.parent_window.show_trail_checkbox.setChecked(self.trail_checkbox.isChecked())
-            self.parent_window.show_velocity_checkbox.setChecked(self.velocity_checkbox.isChecked())
-            self.parent_window.show_connections_checkbox.setChecked(self.connections_checkbox.isChecked())
-            self.parent_window.show_target_line_checkbox.setChecked(self.target_line_checkbox.isChecked())
-            
             # Theme
             new_theme = self.theme_combo.currentText().lower()
             if new_theme != self.parent_window.current_theme:
@@ -612,62 +606,6 @@ class DroneSimulationWindow(QMainWindow):
         
         camera_group.setLayout(camera_layout)
         left_panel.addWidget(camera_group)
-        
-        # Visual options group - ALL ON ONE LINE
-        visual_group = QGroupBox("Visual Options")
-        visual_group.setFont(QFont("Arial", 10, QFont.Bold))
-        visual_layout = QHBoxLayout()  # Changed to horizontal layout
-        visual_layout.setSpacing(10)
-        visual_layout.setContentsMargins(10, 12, 10, 10)
-        
-        self.show_trail_checkbox = QCheckBox("Trail")
-        self.show_trail_checkbox.setFont(QFont("Arial", 9))
-        self.show_trail_checkbox.setChecked(False)
-        self.show_trail_checkbox.stateChanged.connect(self.toggle_trail)
-        visual_layout.addWidget(self.show_trail_checkbox)
-        
-        self.show_velocity_checkbox = QCheckBox("Velocity")
-        self.show_velocity_checkbox.setFont(QFont("Arial", 9))
-        self.show_velocity_checkbox.setChecked(False)
-        self.show_velocity_checkbox.stateChanged.connect(self.toggle_velocity_vector)
-        visual_layout.addWidget(self.show_velocity_checkbox)
-        
-        self.show_connections_checkbox = QCheckBox("Connections")
-        self.show_connections_checkbox.setFont(QFont("Arial", 9))
-        self.show_connections_checkbox.setChecked(False)
-        self.show_connections_checkbox.stateChanged.connect(self.toggle_connections)
-        visual_layout.addWidget(self.show_connections_checkbox)
-        
-        self.show_target_line_checkbox = QCheckBox("Target Line")
-        self.show_target_line_checkbox.setFont(QFont("Arial", 9))
-        self.show_target_line_checkbox.setChecked(False)
-        self.show_target_line_checkbox.stateChanged.connect(self.toggle_target_line)
-        visual_layout.addWidget(self.show_target_line_checkbox)
-        
-        visual_group.setLayout(visual_layout)
-        left_panel.addWidget(visual_group)
-        
-        # Theme selector group
-        theme_group = QGroupBox("Theme")
-        theme_group.setFont(QFont("Arial", 10, QFont.Bold))
-        theme_layout = QHBoxLayout()
-        theme_layout.setSpacing(6)
-        theme_layout.setContentsMargins(10, 12, 10, 10)
-        
-        self.white_theme_btn = QPushButton("☀ White")
-        self.white_theme_btn.clicked.connect(lambda: self.switch_theme('white'))
-        self.white_theme_btn.setMinimumHeight(34)
-        self.white_theme_btn.setObjectName("themeButton")
-        theme_layout.addWidget(self.white_theme_btn)
-        
-        self.black_theme_btn = QPushButton("🌙 Black")
-        self.black_theme_btn.clicked.connect(lambda: self.switch_theme('black'))
-        self.black_theme_btn.setMinimumHeight(34)
-        self.black_theme_btn.setObjectName("themeButton")
-        theme_layout.addWidget(self.black_theme_btn)
-        
-        theme_group.setLayout(theme_layout)
-        left_panel.addWidget(theme_group)
         
         # Middle panel - Waypoint management
         middle_panel = QVBoxLayout()
