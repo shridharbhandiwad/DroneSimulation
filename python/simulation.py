@@ -131,6 +131,7 @@ class DroneSimulationWindow(QMainWindow):
         self.click_mode_enabled = False
         self.click_height = 10.0  # Default height for clicked waypoints
         self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
+        self.visited_waypoints = set()  # Track visited waypoints
         
         # Visual options
         self.show_trail = True
@@ -151,14 +152,8 @@ class DroneSimulationWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_simulation)
         
-        # Generate initial trajectory
-        self.generate_new_trajectory()
-        
-        # Initialize drone model position
-        if self.current_trajectory is not None:
-            initial_pos = self.current_trajectory['positions'][0]
-            initial_vel = self.current_trajectory['velocities'][0]
-            self.update_drone_model_position(initial_pos, initial_vel)
+        # Start with empty scene (no initial trajectory)
+        # User can add waypoints manually or generate random trajectory
         
     def setup_ui(self):
         """Setup the user interface"""
@@ -234,8 +229,8 @@ class DroneSimulationWindow(QMainWindow):
         """)
         legend_text = """<b>Legend:</b><br>
 <span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #00b3b3;'>●</span> <b>Waypoints</b> (Cyan)<br>
-<span style='color: #ab47bc;'>●</span> <b>User Waypoints</b> (Purple)<br>
+<span style='color: #808080;'>●</span> <b>Waypoint</b> (Gray)<br>
+<span style='color: #4caf50;'>●</span> <b>Visited</b> (Green)<br>
 <span style='color: #ffc107;'>●</span> <b>Current Target</b> (Gold)<br>
 <span style='color: #ff6f00;'>━</span> <b>Trail</b> (Orange)<br>
 <span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
@@ -881,10 +876,10 @@ class DroneSimulationWindow(QMainWindow):
         self.create_drone_model()
         self.propeller_rotation = 0.0  # Track propeller rotation angle
         
-        # Waypoint markers with glow (cyan/turquoise)
+        # Waypoint markers with glow (gray by default, green when visited)
         self.waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.0, 0.8, 0.8, 0.25),
+            color=(0.5, 0.5, 0.5, 0.25),  # Gray glow
             size=20,
             pxMode=True
         )
@@ -892,11 +887,14 @@ class DroneSimulationWindow(QMainWindow):
         
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.0, 0.7, 0.7, 1.0),
+            color=(0.5, 0.5, 0.5, 1.0),  # Gray
             size=12,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
+        
+        # Waypoint text labels - list to store text items
+        self.waypoint_text_items = []
         
         # Current target waypoint highlight (animated)
         self.target_waypoint_marker = gl.GLScatterPlotItem(
@@ -907,10 +905,10 @@ class DroneSimulationWindow(QMainWindow):
         )
         self.plot_widget.addItem(self.target_waypoint_marker)
         
-        # User waypoint markers with glow (purple)
+        # User waypoint markers with glow (gray - same as trajectory waypoints)
         self.user_waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.67, 0.28, 0.73, 0.25),
+            color=(0.5, 0.5, 0.5, 0.25),  # Gray glow
             size=22,
             pxMode=True
         )
@@ -918,7 +916,7 @@ class DroneSimulationWindow(QMainWindow):
         
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.67, 0.28, 0.73, 1.0),
+            color=(0.5, 0.5, 0.5, 1.0),  # Gray
             size=14,
             pxMode=True
         )
@@ -1386,6 +1384,9 @@ class DroneSimulationWindow(QMainWindow):
         # Update waypoints
         self.current_trajectory['waypoints'] = np.array(self.user_waypoints)
         
+        # Reset visited waypoints since we have a new set of waypoints
+        self.visited_waypoints.clear()
+        
         # Update visualization
         self.update_3d_scene()
         
@@ -1409,6 +1410,9 @@ class DroneSimulationWindow(QMainWindow):
         self.current_trajectory = self.trajectory_generator.generate(
             initial_pos, initial_vel, self.user_waypoints.copy()
         )
+        
+        # Reset visited waypoints for new trajectory
+        self.visited_waypoints.clear()
         
         # Update visualization
         self.update_3d_scene()
@@ -1438,11 +1442,70 @@ class DroneSimulationWindow(QMainWindow):
             initial_pos, initial_vel, waypoints
         )
         
+        # Reset visited waypoints for new trajectory
+        self.visited_waypoints.clear()
+        
         # Update visualization
         self.update_3d_scene()
         self.reset_simulation()
         
         self.statusBar().showMessage(f"Generated random trajectory with {num_waypoints} waypoints", 2000)
+    
+    def update_waypoint_colors(self):
+        """Update waypoint colors based on visited status"""
+        if self.current_trajectory is None:
+            return
+        
+        waypoints = self.current_trajectory['waypoints']
+        num_waypoints = len(waypoints)
+        
+        # Create color array for each waypoint
+        colors = np.zeros((num_waypoints, 4))
+        colors_glow = np.zeros((num_waypoints, 4))
+        
+        for i in range(num_waypoints):
+            if i in self.visited_waypoints:
+                # Green for visited
+                colors[i] = [0.2, 0.8, 0.2, 1.0]
+                colors_glow[i] = [0.2, 0.8, 0.2, 0.25]
+            else:
+                # Gray for unvisited
+                colors[i] = [0.5, 0.5, 0.5, 1.0]
+                colors_glow[i] = [0.5, 0.5, 0.5, 0.25]
+        
+        # Update markers with new colors
+        self.waypoint_markers.setData(pos=waypoints, color=colors)
+        self.waypoint_markers_glow.setData(pos=waypoints, color=colors_glow)
+    
+    def update_waypoint_labels(self):
+        """Update waypoint text labels"""
+        # Remove old text items
+        for text_item in self.waypoint_text_items:
+            self.plot_widget.removeItem(text_item)
+        self.waypoint_text_items.clear()
+        
+        if self.current_trajectory is None:
+            return
+        
+        waypoints = self.current_trajectory['waypoints']
+        
+        # Create text label for each waypoint
+        for i, wp in enumerate(waypoints):
+            # Determine color based on visited status
+            if i in self.visited_waypoints:
+                color = (0.2, 0.8, 0.2, 1.0)  # Green
+            else:
+                color = (0.5, 0.5, 0.5, 1.0)  # Gray
+            
+            # Create text item with waypoint number
+            text = gl.GLTextItem(
+                pos=(wp[0], wp[1], wp[2] + 2),  # Position slightly above waypoint
+                text=str(i + 1),
+                color=color,
+                font=pg.QtGui.QFont('Arial', 12, pg.QtGui.QFont.Bold)
+            )
+            self.plot_widget.addItem(text)
+            self.waypoint_text_items.append(text)
     
     def update_3d_scene(self):
         """Update 3D scene with current trajectory"""
@@ -1453,12 +1516,14 @@ class DroneSimulationWindow(QMainWindow):
         positions = self.current_trajectory['positions']
         self.trajectory_line.setData(pos=positions)
         
-        # Update waypoint markers
-        waypoints = self.current_trajectory['waypoints']
-        self.waypoint_markers.setData(pos=waypoints)
-        self.waypoint_markers_glow.setData(pos=waypoints)
+        # Update waypoint markers with colors
+        self.update_waypoint_colors()
+        
+        # Update waypoint text labels
+        self.update_waypoint_labels()
         
         # Update waypoint connections
+        waypoints = self.current_trajectory['waypoints']
         if len(waypoints) > 1:
             self.waypoint_connections.setData(pos=waypoints)
     
@@ -1530,7 +1595,16 @@ class DroneSimulationWindow(QMainWindow):
         self.is_playing = False
         self.play_btn.setText("▶ Play")
         self.timer.stop()
-        self.update_visualization()
+        
+        # Reset visited waypoints
+        self.visited_waypoints.clear()
+        
+        # Update visualization to reflect reset state
+        if self.current_trajectory is not None:
+            self.update_waypoint_colors()
+            self.update_waypoint_labels()
+            self.update_visualization()
+        
         self.statusBar().showMessage("Simulation reset to start", 2000)
     
     def update_speed(self, value):
@@ -1576,6 +1650,17 @@ class DroneSimulationWindow(QMainWindow):
         time = times[self.current_step]
         wp_idx = min(wp_indices[self.current_step], len(waypoints) - 1)
         current_wp = waypoints[wp_idx]
+        
+        # Check if any waypoints have been visited (within threshold distance)
+        visit_threshold = 2.0  # meters
+        for i, wp in enumerate(waypoints):
+            distance_to_wp = np.linalg.norm(wp - pos)
+            if distance_to_wp < visit_threshold:
+                if i not in self.visited_waypoints:
+                    self.visited_waypoints.add(i)
+                    # Update colors when a new waypoint is visited
+                    self.update_waypoint_colors()
+                    self.update_waypoint_labels()
         
         # Update 3D drone model with rotation and position
         self.update_drone_model_position(pos, vel)
