@@ -234,7 +234,7 @@ class DroneSimulationWindow(QMainWindow):
         """)
         legend_text = """<b>Legend:</b><br>
 <span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #505050;'>●</span> <b>Waypoints</b> (Dark Gray)<br>
+<span style='color: #00b3b3;'>●</span> <b>Waypoints</b> (Cyan)<br>
 <span style='color: #ab47bc;'>●</span> <b>User Waypoints</b> (Purple)<br>
 <span style='color: #ffc107;'>●</span> <b>Current Target</b> (Gold)<br>
 <span style='color: #ff6f00;'>━</span> <b>Trail</b> (Orange)<br>
@@ -881,19 +881,19 @@ class DroneSimulationWindow(QMainWindow):
         self.create_drone_model()
         self.propeller_rotation = 0.0  # Track propeller rotation angle
         
-        # Waypoint markers with glow (dark gray/charcoal)
+        # Waypoint markers with glow (cyan/turquoise)
         self.waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.25, 0.25, 0.25, 0.25),
-            size=35,
+            color=(0.0, 0.8, 0.8, 0.25),
+            size=20,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers_glow)
         
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.20, 0.20, 0.20, 1.0),
-            size=24,
+            color=(0.0, 0.7, 0.7, 1.0),
+            size=12,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
@@ -902,7 +902,7 @@ class DroneSimulationWindow(QMainWindow):
         self.target_waypoint_marker = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
             color=(1.0, 0.8, 0.0, 0.9),  # Golden
-            size=32,
+            size=18,
             pxMode=True
         )
         self.plot_widget.addItem(self.target_waypoint_marker)
@@ -911,7 +911,7 @@ class DroneSimulationWindow(QMainWindow):
         self.user_waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
             color=(0.67, 0.28, 0.73, 0.25),
-            size=40,
+            size=22,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers_glow)
@@ -919,7 +919,7 @@ class DroneSimulationWindow(QMainWindow):
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
             color=(0.67, 0.28, 0.73, 1.0),
-            size=26,
+            size=14,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers)
@@ -1201,7 +1201,7 @@ class DroneSimulationWindow(QMainWindow):
             # Update target waypoint size with pulse
             self.target_waypoint_marker.setData(
                 pos=np.array([waypoints[wp_idx]]),
-                size=int(32 * pulse)
+                size=int(18 * pulse)
             )
     
     def on_3d_click(self, event):
