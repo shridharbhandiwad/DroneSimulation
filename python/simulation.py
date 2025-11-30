@@ -104,6 +104,27 @@ class DroneSimulationWindow(QMainWindow):
         self.setWindowTitle("Drone Trajectory Simulation Pro")
         self.setGeometry(100, 100, 1800, 950)
         
+        # ========== SETTINGS ==========
+        # Visual Options
+        self.show_trail = False
+        self.show_velocity = False
+        self.show_connections = False
+        self.show_target_line = False
+        self.follow_drone_enabled = False
+        self.trail_length = 20  # Number of points to show in trail
+        
+        # Theme Settings
+        self.current_theme = 'white'  # 'white' or 'black'
+        
+        # Playback Settings
+        self.playback_speed = 1.0
+        self.auto_play_enabled = True  # Auto-play when waypoints are added
+        
+        # Waypoint Settings
+        self.click_height = 10.0  # Default height for clicked waypoints (m)
+        self.click_speed = 10.0  # Default speed for clicked waypoints (m/s)
+        # ========== END SETTINGS ==========
+        
         # Initialize components
         self.trajectory_generator = TrajectoryGenerator(dt=0.1)
         # Camera disabled - uncomment below to re-enable
@@ -124,27 +145,12 @@ class DroneSimulationWindow(QMainWindow):
         self.current_trajectory = None
         self.current_step = 0
         self.is_playing = False
-        self.playback_speed = 1.0
         
         # Waypoint management
         self.user_waypoints = []  # List of dicts: [{'position': [x,y,z], 'speed': float}, ...]
         self.click_mode_enabled = False
-        self.click_height = 10.0  # Default height for clicked waypoints
-        self.click_speed = 10.0  # Default speed for clicked waypoints (m/s)
         self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
         self.visited_waypoints = set()  # Track visited waypoints
-        self.auto_play_enabled = True  # Auto-play when waypoints are added
-        
-        # Visual options - all disabled by default
-        self.show_trail = False
-        self.show_velocity = False
-        self.show_connections = False
-        self.show_target_line = False
-        self.follow_drone_enabled = False
-        self.trail_length = 20  # Number of points to show in trail
-        
-        # Theme settings
-        self.current_theme = 'white'  # 'white' or 'black'
         
         # Setup UI
         self.setup_ui()
