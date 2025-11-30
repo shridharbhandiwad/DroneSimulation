@@ -44,7 +44,7 @@ try {
     Invoke-WebRequest -Uri $ONNX_URL -OutFile $ZipPath -UseBasicParsing
     $ProgressPreference = 'Continue'
     
-    Write-Host "✓ Download complete" -ForegroundColor Green
+    Write-Host "Download complete" -ForegroundColor Green
     
     # Verify download
     if (-not (Test-Path $ZipPath)) {
@@ -59,7 +59,7 @@ try {
     Write-Host "Extracting ONNX Runtime..." -ForegroundColor Cyan
     Expand-Archive -Path $ZipPath -DestinationPath $PSScriptRoot -Force
     
-    Write-Host "✓ Extraction complete" -ForegroundColor Green
+    Write-Host "Extraction complete" -ForegroundColor Green
     
     # Cleanup
     Remove-Item -Path $TempDir -Recurse -Force
@@ -78,9 +78,9 @@ try {
     $AllFilesFound = $true
     foreach ($file in $RequiredFiles) {
         if (Test-Path $file) {
-            Write-Host "  ✓ Found: $(Split-Path $file -Leaf)" -ForegroundColor Green
+            Write-Host "  Found: $(Split-Path $file -Leaf)" -ForegroundColor Green
         } else {
-            Write-Host "  ✗ Missing: $(Split-Path $file -Leaf)" -ForegroundColor Red
+            Write-Host "  Missing: $(Split-Path $file -Leaf)" -ForegroundColor Red
             $AllFilesFound = $false
         }
     }
@@ -99,7 +99,7 @@ try {
         Write-Host "  cd cpp" -ForegroundColor White
         Write-Host "  mkdir build" -ForegroundColor White
         Write-Host "  cd build" -ForegroundColor White
-        Write-Host "  cmake .. -G `"Visual Studio 17 2022`" -A x64 -DONNXRUNTIME_DIR=$INSTALL_DIR" -ForegroundColor White
+        Write-Host "  cmake .. -G ""Visual Studio 17 2022"" -A x64 -DONNXRUNTIME_DIR=$INSTALL_DIR" -ForegroundColor White
         Write-Host "  cmake --build . --config Release" -ForegroundColor White
         Write-Host ""
         Write-Host "Or run the complete demo:" -ForegroundColor Yellow
