@@ -10,12 +10,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Windows-specific: Add common installation paths
 if(WIN32)
+    # Handle Program Files (x86) environment variable
+    # CMake cannot directly parse ProgramFiles(x86) due to parentheses
+    # Use file() command to read the environment variable
+    file(TO_CMAKE_PATH "$ENV{ProgramFiles}" PROG_FILES)
+    
+    # For Program Files (x86), we need to construct the path manually
+    # or use the fact that it's typically "C:/Program Files (x86)"
+    set(PROG_FILES_X86 "C:/Program Files (x86)")
+    
     list(APPEND ONNX_SEARCH_PATHS
         "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.17.1"
         "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.16.3"
         "${CMAKE_SOURCE_DIR}/../onnxruntime-win-x64-1.16.0"
-        "$ENV{ProgramFiles}/onnxruntime"
-        "$ENV{ProgramFiles(x86)}/onnxruntime"
+        "${PROG_FILES}/onnxruntime"
+        "${PROG_FILES_X86}/onnxruntime"
         "C:/Program Files/onnxruntime"
         "C:/onnxruntime"
         "${CMAKE_SOURCE_DIR}/../onnxruntime"
