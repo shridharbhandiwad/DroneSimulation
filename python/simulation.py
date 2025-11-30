@@ -133,13 +133,16 @@ class DroneSimulationWindow(QMainWindow):
         self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
         self.visited_waypoints = set()  # Track visited waypoints
         
-        # Visual options
-        self.show_trail = True
-        self.show_velocity = True
-        self.show_connections = True
-        self.show_target_line = True
+        # Visual options - all disabled by default
+        self.show_trail = False
+        self.show_velocity = False
+        self.show_connections = False
+        self.show_target_line = False
         self.follow_drone_enabled = False
         self.trail_length = 20  # Number of points to show in trail
+        
+        # Theme settings
+        self.current_theme = 'white'  # 'white' or 'black'
         
         # Setup UI
         self.setup_ui()
@@ -171,14 +174,8 @@ class DroneSimulationWindow(QMainWindow):
         view_header = QHBoxLayout()
         view_title = QLabel("3D Trajectory View")
         view_title.setFont(QFont("Arial", 12, QFont.Bold))
-        view_title.setStyleSheet("""
-            color: #2c3e50; 
-            padding: 8px;
-            margin-left: 2px;
-            background: white;
-            border-radius: 6px;
-            border-left: 4px solid #3498db;
-        """)
+        view_title.setObjectName("viewTitle")
+        view_title.setStyleSheet("")  # Will be styled by theme
         view_header.addWidget(view_title)
         left_panel.addLayout(view_header)
         
@@ -218,15 +215,8 @@ class DroneSimulationWindow(QMainWindow):
         
         # Legend box
         legend_box = QLabel()
-        legend_box.setStyleSheet("""
-            background-color: rgba(255, 255, 255, 230);
-            border: 2px solid rgba(52, 152, 219, 180);
-            border-radius: 8px;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 9pt;
-            color: #2c3e50;
-        """)
+        legend_box.setObjectName("legendBox")
+        legend_box.setStyleSheet("")  # Will be styled by theme
         legend_text = """<b>Legend:</b><br>
 <span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
 <span style='color: #808080;'>●</span> <b>Waypoint</b> (Gray)<br>
@@ -277,7 +267,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.new_traj_btn, 0, 2)
         
         speed_label = QLabel("Playback Speed:")
-        speed_label.setStyleSheet("font-weight: 600; font-size: 9pt; color: #2c3e50;")
+        speed_label.setObjectName("controlLabel")
         control_layout.addWidget(speed_label, 1, 0)
         
         self.speed_slider = QSlider(Qt.Horizontal)
@@ -288,7 +278,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.speed_slider, 1, 1)
         
         self.speed_label = QLabel("1.0x")
-        self.speed_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #3498db;")
+        self.speed_label.setObjectName("valueLabel")
         control_layout.addWidget(self.speed_label, 1, 2)
         
         control_group.setLayout(control_layout)
@@ -338,30 +328,52 @@ class DroneSimulationWindow(QMainWindow):
         
         self.show_trail_checkbox = QCheckBox("Show Trail Effect")
         self.show_trail_checkbox.setFont(QFont("Arial", 9))
-        self.show_trail_checkbox.setChecked(True)
+        self.show_trail_checkbox.setChecked(False)
         self.show_trail_checkbox.stateChanged.connect(self.toggle_trail)
         visual_layout.addWidget(self.show_trail_checkbox)
         
         self.show_velocity_checkbox = QCheckBox("Show Velocity Vector")
         self.show_velocity_checkbox.setFont(QFont("Arial", 9))
-        self.show_velocity_checkbox.setChecked(True)
+        self.show_velocity_checkbox.setChecked(False)
         self.show_velocity_checkbox.stateChanged.connect(self.toggle_velocity_vector)
         visual_layout.addWidget(self.show_velocity_checkbox)
         
         self.show_connections_checkbox = QCheckBox("Show Waypoint Connections")
         self.show_connections_checkbox.setFont(QFont("Arial", 9))
-        self.show_connections_checkbox.setChecked(True)
+        self.show_connections_checkbox.setChecked(False)
         self.show_connections_checkbox.stateChanged.connect(self.toggle_connections)
         visual_layout.addWidget(self.show_connections_checkbox)
         
         self.show_target_line_checkbox = QCheckBox("Show Target Line")
         self.show_target_line_checkbox.setFont(QFont("Arial", 9))
-        self.show_target_line_checkbox.setChecked(True)
+        self.show_target_line_checkbox.setChecked(False)
         self.show_target_line_checkbox.stateChanged.connect(self.toggle_target_line)
         visual_layout.addWidget(self.show_target_line_checkbox)
         
         visual_group.setLayout(visual_layout)
         left_panel.addWidget(visual_group)
+        
+        # Theme selector group
+        theme_group = QGroupBox("Theme")
+        theme_group.setFont(QFont("Arial", 10, QFont.Bold))
+        theme_layout = QHBoxLayout()
+        theme_layout.setSpacing(6)
+        theme_layout.setContentsMargins(10, 12, 10, 10)
+        
+        self.white_theme_btn = QPushButton("☀ White")
+        self.white_theme_btn.clicked.connect(lambda: self.switch_theme('white'))
+        self.white_theme_btn.setMinimumHeight(34)
+        self.white_theme_btn.setObjectName("themeButton")
+        theme_layout.addWidget(self.white_theme_btn)
+        
+        self.black_theme_btn = QPushButton("🌙 Black")
+        self.black_theme_btn.clicked.connect(lambda: self.switch_theme('black'))
+        self.black_theme_btn.setMinimumHeight(34)
+        self.black_theme_btn.setObjectName("themeButton")
+        theme_layout.addWidget(self.black_theme_btn)
+        
+        theme_group.setLayout(theme_layout)
+        left_panel.addWidget(theme_group)
         
         # Middle panel - Waypoint management
         middle_panel = QVBoxLayout()
@@ -386,7 +398,7 @@ class DroneSimulationWindow(QMainWindow):
         height_layout = QVBoxLayout()
         height_layout.setSpacing(4)
         height_lbl = QLabel("Waypoint Height:")
-        height_lbl.setStyleSheet("font-weight: 600; font-size: 9pt; color: #4a4a4a;")
+        height_lbl.setObjectName("controlLabel")
         height_layout.addWidget(height_lbl)
         
         height_control = QHBoxLayout()
@@ -397,14 +409,14 @@ class DroneSimulationWindow(QMainWindow):
         self.height_slider.valueChanged.connect(self.update_click_height)
         height_control.addWidget(self.height_slider)
         self.height_label = QLabel("10m")
-        self.height_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #3498db; min-width: 40px;")
+        self.height_label.setObjectName("valueLabel")
         height_control.addWidget(self.height_label)
         height_layout.addLayout(height_control)
         waypoint_layout.addLayout(height_layout)
         
         # Waypoint list
         list_label = QLabel("Active Waypoints:")
-        list_label.setStyleSheet("font-weight: 600; font-size: 9pt; margin-top: 6px; color: #4a4a4a;")
+        list_label.setObjectName("controlLabel")
         waypoint_layout.addWidget(list_label)
         
         self.waypoint_list = QListWidget()
@@ -479,10 +491,10 @@ class DroneSimulationWindow(QMainWindow):
         
         for i, (label, key) in enumerate(info_items):
             label_widget = QLabel(f"{label}:")
-            label_widget.setStyleSheet("font-weight: 600; font-size: 9pt; color: #555555;")
+            label_widget.setObjectName("controlLabel")
             info_layout.addWidget(label_widget, i, 0)
             value_label = QLabel("N/A")
-            value_label.setStyleSheet("font-size: 9pt; color: #3498db; font-weight: 600;")
+            value_label.setObjectName("valueLabel")
             self.info_labels[key] = value_label
             info_layout.addWidget(value_label, i, 1)
         
@@ -496,21 +508,7 @@ class DroneSimulationWindow(QMainWindow):
         ml_layout.setContentsMargins(10, 12, 10, 10)
         ml_status_text = "ML Model Active" if self.use_ml else "Physics Mode"
         ml_status = QLabel(ml_status_text)
-        ml_status.setStyleSheet("""
-            font-size: 9pt; 
-            padding: 8px; 
-            background-color: #e8f5e9;
-            border-radius: 4px;
-            color: #2e7d32;
-            font-weight: 600;
-        """ if self.use_ml else """
-            font-size: 9pt; 
-            padding: 8px; 
-            background-color: #e3f2fd;
-            border-radius: 4px;
-            color: #1976d2;
-            font-weight: 600;
-        """)
+        ml_status.setObjectName("mlStatusActive" if self.use_ml else "mlStatusPhysics")
         ml_layout.addWidget(ml_status)
         ml_group.setLayout(ml_layout)
         middle_panel.addWidget(ml_group)
@@ -565,9 +563,34 @@ class DroneSimulationWindow(QMainWindow):
         main_layout.addLayout(left_panel, 5)
         main_layout.addLayout(middle_panel, 3)
     
+    def switch_theme(self, theme):
+        """Switch between white and black themes"""
+        self.current_theme = theme
+        self.apply_stylesheet()
+        
+        # Update 3D plot background
+        if theme == 'white':
+            self.plot_widget.setBackgroundColor('#ffffff')
+            self.statusBar().showMessage("Switched to White theme", 2000)
+        else:
+            self.plot_widget.setBackgroundColor('#1a1a1a')
+            self.statusBar().showMessage("Switched to Black theme", 2000)
+        
+        # Update waypoint labels with appropriate colors
+        self.update_waypoint_labels()
+    
     def apply_stylesheet(self):
-        """Apply modern white theme stylesheet to the application"""
-        stylesheet = """
+        """Apply theme-appropriate stylesheet to the application"""
+        if self.current_theme == 'white':
+            stylesheet = self.get_white_theme_stylesheet()
+        else:
+            stylesheet = self.get_black_theme_stylesheet()
+        
+        self.setStyleSheet(stylesheet)
+    
+    def get_white_theme_stylesheet(self):
+        """Get white theme stylesheet"""
+        return """
             QMainWindow {
                 background: #f5f5f5;
             }
@@ -806,8 +829,365 @@ class DroneSimulationWindow(QMainWindow):
                 font-size: 9pt;
                 padding: 4px;
             }
+            
+            /* View title styling */
+            #viewTitle {
+                color: #2c3e50; 
+                padding: 8px;
+                margin-left: 2px;
+                background: white;
+                border-radius: 6px;
+                border-left: 4px solid #3498db;
+            }
+            
+            /* Legend box styling */
+            #legendBox {
+                background-color: rgba(255, 255, 255, 230);
+                border: 2px solid rgba(52, 152, 219, 180);
+                border-radius: 8px;
+                padding: 10px;
+                font-family: 'Courier New', monospace;
+                font-size: 9pt;
+                color: #2c3e50;
+            }
+            
+            /* Control labels */
+            #controlLabel {
+                font-weight: 600;
+                font-size: 9pt;
+                color: #555555;
+            }
+            
+            /* Value labels */
+            #valueLabel {
+                font-size: 9pt;
+                color: #3498db;
+                font-weight: 600;
+            }
+            
+            /* ML Status labels */
+            #mlStatusActive {
+                font-size: 9pt;
+                padding: 8px;
+                background-color: #e8f5e9;
+                border-radius: 4px;
+                color: #2e7d32;
+                font-weight: 600;
+            }
+            
+            #mlStatusPhysics {
+                font-size: 9pt;
+                padding: 8px;
+                background-color: #e3f2fd;
+                border-radius: 4px;
+                color: #1976d2;
+                font-weight: 600;
+            }
         """
-        self.setStyleSheet(stylesheet)
+    
+    def get_black_theme_stylesheet(self):
+        """Get black theme stylesheet"""
+        return """
+            QMainWindow {
+                background: #1a1a1a;
+            }
+            
+            QGroupBox {
+                border: 1px solid #404040;
+                border-radius: 8px;
+                margin-top: 12px;
+                padding: 12px;
+                background: #2a2a2a;
+                font-weight: 600;
+            }
+            
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 8px;
+                color: #e0e0e0;
+                background: transparent;
+            }
+            
+            /* Primary action buttons */
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a7ba7, stop:1 #2c5f8f);
+                color: white;
+                border: 1px solid #1f4a73;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: 600;
+                font-size: 9pt;
+                font-family: "Arial", "Helvetica", sans-serif;
+            }
+            
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a8bb7, stop:1 #3c6f9f);
+                border: 1px solid #2c5f8f;
+            }
+            
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1f4a73, stop:1 #153a63);
+                padding: 10px 17px 8px 19px;
+            }
+            
+            /* Play button - green accent */
+            QPushButton#playButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a8f4a, stop:1 #357a38);
+            }
+            
+            QPushButton#playButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a9f5a, stop:1 #458a48);
+                border: 1px solid #2d6a30;
+            }
+            
+            /* Reset button - orange accent */
+            QPushButton#resetButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #cc7a1a, stop:1 #b36200);
+            }
+            
+            QPushButton#resetButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #dc8a2a, stop:1 #c37210);
+                border: 1px solid #a35200;
+            }
+            
+            /* Random trajectory button - purple accent */
+            QPushButton#newTrajButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #8b3a9b, stop:1 #732283);
+            }
+            
+            QPushButton#newTrajButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #9b4aab, stop:1 #833293);
+                border: 1px solid #631a73;
+            }
+            
+            /* Generate button - teal accent */
+            QPushButton#generateButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a8679, stop:1 #006e61);
+            }
+            
+            QPushButton#generateButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #2a9689, stop:1 #107e71);
+                border: 1px solid #005e51;
+            }
+            
+            /* Apply button - indigo accent */
+            QPushButton#applyButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a5ba0, stop:1 #2f3b85);
+            }
+            
+            QPushButton#applyButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a6bb0, stop:1 #3f4b95);
+                border: 1px solid #1f2b75;
+            }
+            
+            QPushButton#applyButton:disabled {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a4a4a, stop:1 #3a3a3a);
+                color: #7a7a7a;
+                border: 1px solid #2a2a2a;
+            }
+            
+            /* Remove button - red accent */
+            QPushButton#removeButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #bf3530, stop:1 #a42a26);
+            }
+            
+            QPushButton#removeButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #cf4540, stop:1 #b43a36);
+                border: 1px solid #941f1e;
+            }
+            
+            /* Clear button - grey accent */
+            QPushButton#clearButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a6a7c, stop:1 #404d5b);
+            }
+            
+            QPushButton#clearButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #6a7a8c, stop:1 #505d6b);
+                border: 1px solid #303d4b;
+            }
+            
+            /* Slider styling */
+            QSlider::groove:horizontal {
+                border: 1px solid #404040;
+                height: 8px;
+                background: #2a2a2a;
+                border-radius: 4px;
+            }
+            
+            QSlider::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a7ba7, stop:1 #2c5f8f);
+                border: 2px solid #1f4a73;
+                width: 20px;
+                margin: -6px 0;
+                border-radius: 10px;
+            }
+            
+            QSlider::handle:horizontal:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a8bb7, stop:1 #3c6f9f);
+                border: 2px solid #2c5f8f;
+            }
+            
+            QSlider::sub-page:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a7ba7, stop:1 #2c5f8f);
+                border-radius: 4px;
+            }
+            
+            /* Checkbox styling */
+            QCheckBox {
+                spacing: 8px;
+                color: #e0e0e0;
+                font-weight: 500;
+            }
+            
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                border: 2px solid #606060;
+                background: #2a2a2a;
+            }
+            
+            QCheckBox::indicator:hover {
+                border: 2px solid #4a7ba7;
+                background: #3a3a3a;
+            }
+            
+            QCheckBox::indicator:checked {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a7ba7, stop:1 #2c5f8f);
+                border: 2px solid #1f4a73;
+            }
+            
+            QCheckBox::indicator:checked:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #5a8bb7, stop:1 #3c6f9f);
+            }
+            
+            /* List widget styling */
+            QListWidget {
+                border: 1px solid #404040;
+                border-radius: 6px;
+                background: #2a2a2a;
+                padding: 4px;
+                font-size: 9pt;
+                font-family: "Arial", "Helvetica", sans-serif;
+            }
+            
+            QListWidget::item {
+                padding: 6px 8px;
+                border-radius: 4px;
+                margin: 2px;
+                color: #e0e0e0;
+            }
+            
+            QListWidget::item:selected {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a7ba7, stop:1 #2c5f8f);
+                color: white;
+                font-weight: 600;
+            }
+            
+            QListWidget::item:hover {
+                background: #3a3a3a;
+            }
+            
+            /* Label styling */
+            QLabel {
+                color: #e0e0e0;
+            }
+            
+            /* Status bar styling */
+            QStatusBar {
+                background: #2a2a2a;
+                color: #b0b0b0;
+                border-top: 1px solid #404040;
+                font-size: 9pt;
+                padding: 4px;
+            }
+            
+            /* Frame styling */
+            #plot3dContainer {
+                background: #1a1a1a;
+                border-radius: 8px;
+                border: 1px solid #404040;
+            }
+            
+            /* View title styling */
+            #viewTitle {
+                color: #e0e0e0; 
+                padding: 8px;
+                margin-left: 2px;
+                background: #2a2a2a;
+                border-radius: 6px;
+                border-left: 4px solid #4a7ba7;
+            }
+            
+            /* Legend box styling */
+            #legendBox {
+                background-color: rgba(42, 42, 42, 230);
+                border: 2px solid rgba(74, 123, 167, 180);
+                border-radius: 8px;
+                padding: 10px;
+                font-family: 'Courier New', monospace;
+                font-size: 9pt;
+                color: #e0e0e0;
+            }
+            
+            /* Control labels */
+            #controlLabel {
+                font-weight: 600;
+                font-size: 9pt;
+                color: #b0b0b0;
+            }
+            
+            /* Value labels */
+            #valueLabel {
+                font-size: 9pt;
+                color: #6ba3d4;
+                font-weight: 600;
+            }
+            
+            /* ML Status labels */
+            #mlStatusActive {
+                font-size: 9pt;
+                padding: 8px;
+                background-color: #1f3f1f;
+                border-radius: 4px;
+                color: #5faf5f;
+                font-weight: 600;
+            }
+            
+            #mlStatusPhysics {
+                font-size: 9pt;
+                padding: 8px;
+                background-color: #1f2f3f;
+                border-radius: 4px;
+                color: #4a8fd4;
+                font-weight: 600;
+            }
+        """
     
     def setup_3d_scene(self):
         """Setup 3D visualization scene with enhanced graphics"""
@@ -1491,18 +1871,23 @@ class DroneSimulationWindow(QMainWindow):
         
         # Create text label for each waypoint
         for i, wp in enumerate(waypoints):
-            # Determine color based on visited status
+            # Determine color based on visited status and theme
             if i in self.visited_waypoints:
-                color = (0.2, 0.8, 0.2, 1.0)  # Green
+                # Green for visited (brighter for visibility)
+                color = (0.0, 1.0, 0.0, 1.0) if self.current_theme == 'white' else (0.2, 1.0, 0.2, 1.0)
             else:
-                color = (0.5, 0.5, 0.5, 1.0)  # Gray
+                # High contrast colors for unvisited based on theme
+                if self.current_theme == 'white':
+                    color = (0.0, 0.0, 0.0, 1.0)  # Black on white background
+                else:
+                    color = (1.0, 1.0, 1.0, 1.0)  # White on black background
             
-            # Create text item with waypoint number
+            # Create text item with waypoint number - larger and bolder for better visibility
             text = gl.GLTextItem(
-                pos=(wp[0], wp[1], wp[2] + 2),  # Position slightly above waypoint
-                text=str(i + 1),
+                pos=(wp[0], wp[1], wp[2] + 2.5),  # Position slightly higher above waypoint
+                text=f"WP{i + 1}",  # Add "WP" prefix for clarity
                 color=color,
-                font=pg.QtGui.QFont('Arial', 12, pg.QtGui.QFont.Bold)
+                font=pg.QtGui.QFont('Arial', 14, pg.QtGui.QFont.Bold)
             )
             self.plot_widget.addItem(text)
             self.waypoint_text_items.append(text)
