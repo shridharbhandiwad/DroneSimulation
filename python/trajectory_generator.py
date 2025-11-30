@@ -23,13 +23,14 @@ class DronePhysics:
         self.max_vertical_speed = max_vertical_speed
         self.drag_coefficient = 0.1
         
-    def update(self, state: Dict, target_waypoint: np.ndarray, dt: float) -> Dict:
+    def update(self, state: Dict, target_waypoint: np.ndarray, target_speed: float, dt: float) -> Dict:
         """
         Update drone state for one timestep
         
         Args:
             state: Current state dict with 'position', 'velocity', 'acceleration'
             target_waypoint: Target position to move towards
+            target_speed: Desired speed for this waypoint (m/s)
             dt: Time step in seconds
             
         Returns:
@@ -47,8 +48,14 @@ class DronePhysics:
         else:
             direction = to_target / distance
             
-            # Desired speed based on distance (slow down near target)
-            desired_speed = min(self.max_speed, distance / 2.0)
+            # Use waypoint-specific speed, limited by max speed
+            # Slow down near target for smooth approach
+            slowdown_distance = 3.0  # Start slowing down 3m from target
+            if distance < slowdown_distance:
+                desired_speed = min(target_speed, distance / slowdown_distance * target_speed)
+            else:
+                desired_speed = min(target_speed, self.max_speed)
+            
             target_velocity = direction * desired_speed
             
             # Limit vertical speed
@@ -92,18 +99,21 @@ class TrajectoryGenerator:
         """
         self.dt = dt
         self.physics = DronePhysics()
-        self.waypoints = []  # Current waypoints
+        self.waypoints = []  # Current waypoints (position, speed tuples)
         self.current_waypoint_idx = 0  # Current waypoint being targeted
         
     def generate(self, initial_position: np.ndarray, initial_velocity: np.ndarray,
-                 waypoints: List[np.ndarray], max_time: float = 60.0) -> Dict:
+                 waypoints: List, max_time: float = 60.0) -> Dict:
         """
         Generate complete trajectory
         
         Args:
             initial_position: Starting position [x, y, z]
             initial_velocity: Starting velocity [vx, vy, vz]
-            waypoints: List of waypoint positions to visit
+            waypoints: List of waypoints - each can be:
+                      - np.ndarray [x, y, z] with default speed 10 m/s
+                      - dict {'position': [x,y,z], 'speed': float}
+                      - tuple ([x,y,z], speed)
             max_time: Maximum simulation time in seconds
             
         Returns:
@@ -115,6 +125,24 @@ class TrajectoryGenerator:
             'acceleration': np.zeros(3, dtype=np.float32),
             'time': 0.0
         }
+        
+        # Parse waypoints to extract positions and speeds
+        waypoint_positions = []
+        waypoint_speeds = []
+        
+        for wp in waypoints:
+            if isinstance(wp, dict):
+                # Dict format: {'position': [x,y,z], 'speed': float}
+                waypoint_positions.append(np.array(wp['position']))
+                waypoint_speeds.append(wp.get('speed', 10.0))
+            elif isinstance(wp, tuple) and len(wp) == 2:
+                # Tuple format: ([x,y,z], speed)
+                waypoint_positions.append(np.array(wp[0]))
+                waypoint_speeds.append(wp[1])
+            else:
+                # Array format: [x,y,z] with default speed
+                waypoint_positions.append(np.array(wp))
+                waypoint_speeds.append(10.0)  # Default speed
         
         # Storage for trajectory
         positions = [state['position'].copy()]
@@ -128,21 +156,23 @@ class TrajectoryGenerator:
         
         for step in range(max_steps):
             # Get current target waypoint
-            if current_wp_idx < len(waypoints):
-                target = np.array(waypoints[current_wp_idx])
+            if current_wp_idx < len(waypoint_positions):
+                target = waypoint_positions[current_wp_idx]
+                target_speed = waypoint_speeds[current_wp_idx]
                 
                 # Check if reached current waypoint
                 if distance_3d(state['position'], target) < 0.5:
                     current_wp_idx += 1
-                    if current_wp_idx >= len(waypoints):
+                    if current_wp_idx >= len(waypoint_positions):
                         # Reached all waypoints
                         break
-                    target = np.array(waypoints[current_wp_idx])
+                    target = waypoint_positions[current_wp_idx]
+                    target_speed = waypoint_speeds[current_wp_idx]
             else:
                 break
             
-            # Update physics
-            state = self.physics.update(state, target, self.dt)
+            # Update physics with target speed
+            state = self.physics.update(state, target, target_speed, self.dt)
             
             # Store data
             positions.append(state['position'].copy())
@@ -152,7 +182,7 @@ class TrajectoryGenerator:
             current_waypoint_idx.append(current_wp_idx)
             
             # Early termination if stationary at final waypoint
-            if (current_wp_idx >= len(waypoints) - 1 and 
+            if (current_wp_idx >= len(waypoint_positions) - 1 and 
                 np.linalg.norm(state['velocity']) < 0.1):
                 break
         
@@ -162,7 +192,8 @@ class TrajectoryGenerator:
             'accelerations': np.array(accelerations),
             'times': np.array(times),
             'waypoint_indices': np.array(current_waypoint_idx),
-            'waypoints': np.array(waypoints),
+            'waypoints': np.array(waypoint_positions),
+            'waypoint_speeds': np.array(waypoint_speeds),
             'dt': self.dt
         }
     
@@ -181,7 +212,7 @@ class TrajectoryGenerator:
     
     def regenerate_from_current(self, current_position: np.ndarray, 
                                 current_velocity: np.ndarray,
-                                waypoints: List[np.ndarray],
+                                waypoints: List,
                                 current_waypoint_idx: int = 0,
                                 max_time: float = 60.0) -> Dict:
         """
@@ -191,7 +222,7 @@ class TrajectoryGenerator:
         Args:
             current_position: Current position [x, y, z]
             current_velocity: Current velocity [vx, vy, vz]
-            waypoints: New list of waypoints to visit
+            waypoints: New list of waypoints to visit (can include speed)
             current_waypoint_idx: Index of waypoint to target first (default: 0)
             max_time: Maximum simulation time in seconds
             
