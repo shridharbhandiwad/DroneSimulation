@@ -220,11 +220,12 @@ class DroneSimulationWindow(QMainWindow):
         legend_box.setObjectName("legendBox")
         legend_box.setStyleSheet("")  # Will be styled by theme
         legend_text = """<b>Legend:</b><br>
-<span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #808080;'>●</span> <b>Waypoint</b> (Gray)<br>
+<span style='color: #3399db;'>●</span> <b>Drone</b> (Blue)<br>
+<span style='color: #26a69a;'>●</span> <b>Trajectory WP</b> (Teal)<br>
+<span style='color: #ab47ba;'>●</span> <b>User WP</b> (Purple)<br>
 <span style='color: #4caf50;'>●</span> <b>Visited</b> (Green)<br>
-<span style='color: #ffc107;'>●</span> <b>Current Target</b> (Gold)<br>
-<span style='color: #ff6f00;'>━</span> <b>Trail</b> (Orange)<br>
+<span style='color: #ffc107;'>●</span> <b>Target</b> (Gold)<br>
+<span style='color: #ff7700;'>━</span> <b>Trail</b> (Orange)<br>
 <span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
 <br><b>Controls:</b><br>
 • Left Mouse: Rotate<br>
@@ -607,8 +608,103 @@ class DroneSimulationWindow(QMainWindow):
             self.plot_widget.setBackgroundColor('#1a1a1a')
             self.statusBar().showMessage("Switched to Black theme", 2000)
         
+        # Apply theme colors to all 3D scene elements
+        self.apply_theme_to_3d_scene()
+        
         # Update waypoint labels with appropriate colors
         self.update_waypoint_labels()
+    
+    def apply_theme_to_3d_scene(self):
+        """Apply theme-specific colors to all 3D scene elements"""
+        if self.current_theme == 'white':
+            # White theme colors - modern and vibrant on white background
+            
+            # Grid colors
+            self.main_grid.setColor((180, 180, 180, 100))  # Light grey
+            self.fine_grid.setColor((220, 220, 220, 40))   # Very light grey
+            
+            # Trajectory line - modern blue
+            self.trajectory_line.setData(
+                pos=self.trajectory_line.pos,
+                color=(0.20, 0.60, 0.86, 0.95)
+            )
+            
+            # Trail line - vibrant orange
+            if hasattr(self, 'trail_line'):
+                self.trail_line.setData(
+                    pos=self.trail_line.pos,
+                    color=(1.0, 0.44, 0.0, 0.85)  # Brighter orange for visibility
+                )
+            
+            # Waypoint connections - medium grey
+            if hasattr(self, 'waypoint_connections'):
+                self.waypoint_connections.setData(
+                    pos=self.waypoint_connections.pos,
+                    color=(0.4, 0.4, 0.4, 0.5)  # Darker grey for better visibility on white
+                )
+            
+            # Target line - golden yellow
+            if hasattr(self, 'target_line'):
+                self.target_line.setData(
+                    pos=self.target_line.pos,
+                    color=(1.0, 0.76, 0.0, 0.7)  # Bright gold
+                )
+            
+            # Velocity vector - vibrant green
+            if hasattr(self, 'velocity_vector'):
+                self.velocity_vector.setData(
+                    pos=self.velocity_vector.pos,
+                    color=(0.3, 0.75, 0.3, 0.95)  # Brighter green
+                )
+            
+            # Drone body - modern blue (already set in create_drone_model, but ensure consistency)
+            if hasattr(self, 'drone_body'):
+                self.drone_body.setColor((0.20, 0.60, 0.86, 1.0))
+            
+        else:
+            # Black theme colors - adjusted for dark background visibility
+            
+            # Grid colors - lighter for dark background
+            self.main_grid.setColor((100, 100, 100, 100))  # Medium grey
+            self.fine_grid.setColor((80, 80, 80, 50))      # Dark grey
+            
+            # Trajectory line - brighter blue for dark background
+            self.trajectory_line.setData(
+                pos=self.trajectory_line.pos,
+                color=(0.35, 0.70, 0.95, 0.95)  # Lighter blue
+            )
+            
+            # Trail line - brighter orange
+            if hasattr(self, 'trail_line'):
+                self.trail_line.setData(
+                    pos=self.trail_line.pos,
+                    color=(1.0, 0.55, 0.15, 0.85)  # Bright orange
+                )
+            
+            # Waypoint connections - lighter grey for dark background
+            if hasattr(self, 'waypoint_connections'):
+                self.waypoint_connections.setData(
+                    pos=self.waypoint_connections.pos,
+                    color=(0.6, 0.6, 0.6, 0.5)  # Light grey
+                )
+            
+            # Target line - bright golden yellow
+            if hasattr(self, 'target_line'):
+                self.target_line.setData(
+                    pos=self.target_line.pos,
+                    color=(1.0, 0.85, 0.2, 0.75)  # Brighter gold
+                )
+            
+            # Velocity vector - bright green
+            if hasattr(self, 'velocity_vector'):
+                self.velocity_vector.setData(
+                    pos=self.velocity_vector.pos,
+                    color=(0.4, 0.9, 0.4, 0.95)  # Brighter green
+                )
+            
+            # Drone body - brighter blue for dark background
+            if hasattr(self, 'drone_body'):
+                self.drone_body.setColor((0.35, 0.70, 0.95, 1.0))
     
     def apply_stylesheet(self):
         """Apply theme-appropriate stylesheet to the application"""
@@ -1222,62 +1318,62 @@ class DroneSimulationWindow(QMainWindow):
     
     def setup_3d_scene(self):
         """Setup 3D visualization scene with enhanced graphics"""
-        # Main grid (major grid lines)
+        # Main grid (major grid lines) - theme-compliant
         self.main_grid = gl.GLGridItem()
         self.main_grid.scale(5, 5, 1)
-        self.main_grid.setColor((180, 180, 180, 100))
+        # Will be set by apply_theme_to_3d_scene()
         self.plot_widget.addItem(self.main_grid)
         
-        # Fine grid (minor grid lines)
+        # Fine grid (minor grid lines) - theme-compliant
         self.fine_grid = gl.GLGridItem()
         self.fine_grid.scale(1, 1, 1)
-        self.fine_grid.setColor((220, 220, 220, 40))
+        # Will be set by apply_theme_to_3d_scene()
         self.plot_widget.addItem(self.fine_grid)
         
         # Add coordinate axes
         self.setup_axes()
         
-        # Trajectory line with enhanced appearance
+        # Trajectory line with enhanced appearance - theme-compliant
         self.trajectory_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.20, 0.60, 0.86, 0.95),
+            color=(0.20, 0.60, 0.86, 0.95),  # Will be updated by theme
             width=4.0,
             antialias=True
         )
         self.plot_widget.addItem(self.trajectory_line)
         
-        # Trail effect (shows recent path)
+        # Trail effect (shows recent path) - theme-compliant
         self.trail_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.95, 0.40, 0.20, 0.8),  # Orange trail
+            color=(0.95, 0.40, 0.20, 0.8),  # Will be updated by theme
             width=6.0,
             antialias=True
         )
         self.plot_widget.addItem(self.trail_line)
         
-        # Waypoint connection lines
+        # Waypoint connection lines - theme-compliant
         self.waypoint_connections = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.30, 0.30, 0.30, 0.4),  # Semi-transparent dark gray
+            color=(0.30, 0.30, 0.30, 0.4),  # Will be updated by theme
             width=2.0,
             antialias=True,
             mode='line_strip'
         )
         self.plot_widget.addItem(self.waypoint_connections)
         
-        # Current target line (from drone to current waypoint)
+        # Current target line (from drone to current waypoint) - theme-compliant
         self.target_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0], [0, 0, 0]]),
-            color=(1.0, 0.8, 0.0, 0.6),  # Golden yellow
+            color=(1.0, 0.8, 0.0, 0.6),  # Will be updated by theme
             width=2.5,
             antialias=True
         )
         self.plot_widget.addItem(self.target_line)
         
-        # Velocity vector
+        # Velocity vector - theme-compliant
         self.velocity_vector = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0], [0, 0, 0]]),
-            color=(0.2, 0.8, 0.2, 0.9),  # Green
+            color=(0.2, 0.8, 0.2, 0.9),  # Will be updated by theme
             width=3.0,
             antialias=True
         )
@@ -1287,10 +1383,10 @@ class DroneSimulationWindow(QMainWindow):
         self.create_drone_model()
         self.propeller_rotation = 0.0  # Track propeller rotation angle
         
-        # Waypoint markers with glow (gray by default, green when visited)
+        # Waypoint markers with glow - theme-compliant (teal for generated waypoints)
         self.waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.5, 0.5, 0.5, 0.25),  # Gray glow
+            color=(0.15, 0.65, 0.60, 0.25),  # Teal glow - theme-compliant
             size=20,
             pxMode=True
         )
@@ -1298,7 +1394,7 @@ class DroneSimulationWindow(QMainWindow):
         
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.5, 0.5, 0.5, 1.0),  # Gray
+            color=(0.15, 0.65, 0.60, 1.0),  # Teal - theme-compliant
             size=12,
             pxMode=True
         )
@@ -1316,10 +1412,10 @@ class DroneSimulationWindow(QMainWindow):
         )
         self.plot_widget.addItem(self.target_waypoint_marker)
         
-        # User waypoint markers with glow (gray - same as trajectory waypoints)
+        # User waypoint markers with glow - theme-compliant (purple for user waypoints)
         self.user_waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.5, 0.5, 0.5, 0.25),  # Gray glow
+            color=(0.67, 0.28, 0.73, 0.25),  # Purple glow - theme-compliant
             size=22,
             pxMode=True
         )
@@ -1327,7 +1423,7 @@ class DroneSimulationWindow(QMainWindow):
         
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.5, 0.5, 0.5, 1.0),  # Gray
+            color=(0.67, 0.28, 0.73, 1.0),  # Purple - theme-compliant
             size=14,
             pxMode=True
         )
@@ -1341,6 +1437,9 @@ class DroneSimulationWindow(QMainWindow):
         
         # Connect mouse events
         self.plot_widget.mousePressEvent = self.on_3d_click
+        
+        # Apply initial theme colors to 3D scene
+        self.apply_theme_to_3d_scene()
     
     def setup_axes(self):
         """Setup coordinate axes with labels"""
@@ -1376,11 +1475,11 @@ class DroneSimulationWindow(QMainWindow):
     
     def create_drone_model(self):
         """Create a 3D drone model with body, arms, and propellers"""
-        # Drone body (center sphere)
+        # Drone body (center sphere) - theme-compliant blue
         md = gl.MeshData.sphere(rows=10, cols=10, radius=0.8)
         self.drone_body = gl.GLMeshItem(
             meshdata=md,
-            color=(0.2, 0.5, 0.8, 1.0),
+            color=(0.20, 0.60, 0.86, 1.0),  # Modern blue - theme-compliant
             smooth=True,
             shader='shaded',
             glOptions='opaque'
@@ -1597,20 +1696,27 @@ class DroneSimulationWindow(QMainWindow):
             prop['blade2'].setTransform(blade2_transform)
     
     def update_animations(self):
-        """Update animated elements like pulsing markers"""
+        """Update animated elements like pulsing markers - theme-compliant"""
         self.animation_phase = (self.animation_phase + 0.1) % (2 * np.pi)
         pulse = 0.8 + 0.2 * np.sin(self.animation_phase)
         
-        # Pulse the target waypoint marker
+        # Pulse the target waypoint marker with theme-compliant colors
         if self.current_trajectory is not None and self.current_step < len(self.current_trajectory['positions']):
             waypoints = self.current_trajectory['waypoints']
             wp_indices = self.current_trajectory['waypoint_indices']
             wp_idx = min(wp_indices[self.current_step], len(waypoints) - 1)
             
-            # Update target waypoint size with pulse
+            # Theme-compliant gold color for target waypoint
+            if self.current_theme == 'white':
+                target_color = (1.0, 0.76, 0.0, 0.9)  # Gold
+            else:
+                target_color = (1.0, 0.85, 0.2, 0.95)  # Brighter gold for dark background
+            
+            # Update target waypoint size with pulse and color
             self.target_waypoint_marker.setData(
                 pos=np.array([waypoints[wp_idx]]),
-                size=int(18 * pulse)
+                size=int(18 * pulse),
+                color=target_color
             )
     
     def on_3d_click(self, event):
@@ -1726,11 +1832,20 @@ class DroneSimulationWindow(QMainWindow):
                 self.statusBar().showMessage("All waypoints cleared", 2000)
     
     def update_user_waypoint_markers(self):
-        """Update the visual markers for user waypoints"""
+        """Update the visual markers for user waypoints - theme-compliant"""
         if self.user_waypoints:
             positions = np.array([wp['position'] for wp in self.user_waypoints])
-            self.user_waypoint_markers.setData(pos=positions)
-            self.user_waypoint_markers_glow.setData(pos=positions)
+            
+            # Theme-compliant colors for user waypoints (purple)
+            if self.current_theme == 'white':
+                color = (0.67, 0.28, 0.73, 1.0)      # Purple
+                glow_color = (0.67, 0.28, 0.73, 0.25)
+            else:
+                color = (0.77, 0.38, 0.83, 1.0)      # Brighter purple for dark background
+                glow_color = (0.77, 0.38, 0.83, 0.25)
+            
+            self.user_waypoint_markers.setData(pos=positions, color=color)
+            self.user_waypoint_markers_glow.setData(pos=positions, color=glow_color)
         else:
             # Hide markers by placing them off-screen
             self.user_waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
@@ -1900,7 +2015,7 @@ class DroneSimulationWindow(QMainWindow):
         self.statusBar().showMessage(f"Generated random trajectory with {num_waypoints} waypoints", 2000)
     
     def update_waypoint_colors(self):
-        """Update waypoint colors based on visited status"""
+        """Update waypoint colors based on visited status - theme-compliant"""
         if self.current_trajectory is None:
             return
         
@@ -1911,15 +2026,27 @@ class DroneSimulationWindow(QMainWindow):
         colors = np.zeros((num_waypoints, 4))
         colors_glow = np.zeros((num_waypoints, 4))
         
+        # Theme-compliant colors
+        if self.current_theme == 'white':
+            # White theme colors
+            visited_color = [0.3, 0.75, 0.3, 1.0]      # Vibrant green for visited
+            visited_glow = [0.3, 0.75, 0.3, 0.25]
+            unvisited_color = [0.15, 0.65, 0.60, 1.0]  # Teal for unvisited
+            unvisited_glow = [0.15, 0.65, 0.60, 0.25]
+        else:
+            # Black theme colors - brighter for visibility
+            visited_color = [0.4, 0.9, 0.4, 1.0]       # Bright green for visited
+            visited_glow = [0.4, 0.9, 0.4, 0.25]
+            unvisited_color = [0.2, 0.75, 0.70, 1.0]   # Bright teal for unvisited
+            unvisited_glow = [0.2, 0.75, 0.70, 0.25]
+        
         for i in range(num_waypoints):
             if i in self.visited_waypoints:
-                # Green for visited
-                colors[i] = [0.2, 0.8, 0.2, 1.0]
-                colors_glow[i] = [0.2, 0.8, 0.2, 0.25]
+                colors[i] = visited_color
+                colors_glow[i] = visited_glow
             else:
-                # Gray for unvisited
-                colors[i] = [0.5, 0.5, 0.5, 1.0]
-                colors_glow[i] = [0.5, 0.5, 0.5, 0.25]
+                colors[i] = unvisited_color
+                colors_glow[i] = unvisited_glow
         
         # Update markers with new colors
         self.waypoint_markers.setData(pos=waypoints, color=colors)
