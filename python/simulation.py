@@ -6,7 +6,7 @@ import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QSlider, QGroupBox,
                              QGridLayout, QLineEdit, QMessageBox, QListWidget, 
-                             QListWidgetItem, QSplitter, QFrame, QCheckBox)
+                             QListWidgetItem, QSplitter, QFrame, QCheckBox, QStackedLayout)
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QFont, QColor, QPalette
 import pyqtgraph as pg
@@ -132,6 +132,14 @@ class DroneSimulationWindow(QMainWindow):
         self.click_height = 10.0  # Default height for clicked waypoints
         self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
         
+        # Visual options
+        self.show_trail = True
+        self.show_velocity = True
+        self.show_connections = True
+        self.show_target_line = True
+        self.follow_drone_enabled = False
+        self.trail_length = 20  # Number of points to show in trail
+        
         # Setup UI
         self.setup_ui()
         self.apply_stylesheet()
@@ -185,13 +193,58 @@ class DroneSimulationWindow(QMainWindow):
         """)
         plot_layout = QVBoxLayout(plot_container)
         plot_layout.setContentsMargins(2, 2, 2, 2)
+        plot_layout.setSpacing(0)
+        
+        # Create a stacked widget to overlay legend on 3D view
+        from PyQt5.QtWidgets import QStackedLayout
+        view_stack = QWidget()
+        stack_layout = QStackedLayout(view_stack)
+        stack_layout.setStackingMode(QStackedLayout.StackAll)
         
         self.plot_widget = gl.GLViewWidget()
         self.plot_widget.setMinimumSize(900, 580)
         self.plot_widget.setCameraPosition(distance=100)
         self.plot_widget.setBackgroundColor('#ffffff')
         self.plot_widget.setObjectName("plot3d")
-        plot_layout.addWidget(self.plot_widget)
+        stack_layout.addWidget(self.plot_widget)
+        
+        # Add legend overlay
+        legend_widget = QWidget()
+        legend_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
+        legend_layout = QVBoxLayout(legend_widget)
+        legend_layout.setContentsMargins(10, 10, 10, 10)
+        legend_layout.setSpacing(0)
+        
+        # Legend box
+        legend_box = QLabel()
+        legend_box.setStyleSheet("""
+            background-color: rgba(255, 255, 255, 230);
+            border: 2px solid rgba(52, 152, 219, 180);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            color: #2c3e50;
+        """)
+        legend_text = """<b>Legend:</b><br>
+<span style='color: #3498db;'>●</span> <b>Drone</b> (Blue)<br>
+<span style='color: #26a69a;'>●</span> <b>Waypoints</b> (Teal)<br>
+<span style='color: #ab47bc;'>●</span> <b>User Waypoints</b> (Purple)<br>
+<span style='color: #ffc107;'>●</span> <b>Current Target</b> (Gold)<br>
+<span style='color: #ff6f00;'>━</span> <b>Trail</b> (Orange)<br>
+<span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
+<br><b>Controls:</b><br>
+• Left Mouse: Rotate<br>
+• Right Mouse: Pan<br>
+• Scroll: Zoom"""
+        legend_box.setText(legend_text)
+        legend_box.setWordWrap(True)
+        legend_box.setMaximumWidth(250)
+        legend_layout.addWidget(legend_box, 0, Qt.AlignTop | Qt.AlignLeft)
+        
+        stack_layout.addWidget(legend_widget)
+        
+        plot_layout.addWidget(view_stack)
         left_panel.addWidget(plot_container)
         
         # Initialize 3D scene
@@ -204,19 +257,19 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.setSpacing(8)
         control_layout.setContentsMargins(10, 12, 10, 10)
         
-        self.play_btn = QPushButton("Play")
+        self.play_btn = QPushButton("▶ Play")
         self.play_btn.clicked.connect(self.toggle_play)
         self.play_btn.setMinimumHeight(38)
         self.play_btn.setObjectName("playButton")
         control_layout.addWidget(self.play_btn, 0, 0)
         
-        self.reset_btn = QPushButton("Reset")
+        self.reset_btn = QPushButton("⟲ Reset")
         self.reset_btn.clicked.connect(self.reset_simulation)
         self.reset_btn.setMinimumHeight(38)
         self.reset_btn.setObjectName("resetButton")
         control_layout.addWidget(self.reset_btn, 0, 1)
         
-        self.new_traj_btn = QPushButton("Random")
+        self.new_traj_btn = QPushButton("🎲 Random")
         self.new_traj_btn.clicked.connect(self.generate_new_trajectory)
         self.new_traj_btn.setMinimumHeight(38)
         self.new_traj_btn.setObjectName("newTrajButton")
@@ -239,6 +292,75 @@ class DroneSimulationWindow(QMainWindow):
         
         control_group.setLayout(control_layout)
         left_panel.addWidget(control_group)
+        
+        # Camera controls group
+        camera_group = QGroupBox("Camera Controls")
+        camera_group.setFont(QFont("Arial", 10, QFont.Bold))
+        camera_layout = QGridLayout()
+        camera_layout.setSpacing(6)
+        camera_layout.setContentsMargins(10, 12, 10, 10)
+        
+        self.view_top_btn = QPushButton("⬆ Top")
+        self.view_top_btn.clicked.connect(lambda: self.set_camera_view('top'))
+        self.view_top_btn.setMinimumHeight(32)
+        camera_layout.addWidget(self.view_top_btn, 0, 0)
+        
+        self.view_side_btn = QPushButton("↔ Side")
+        self.view_side_btn.clicked.connect(lambda: self.set_camera_view('side'))
+        self.view_side_btn.setMinimumHeight(32)
+        camera_layout.addWidget(self.view_side_btn, 0, 1)
+        
+        self.view_front_btn = QPushButton("⬌ Front")
+        self.view_front_btn.clicked.connect(lambda: self.set_camera_view('front'))
+        self.view_front_btn.setMinimumHeight(32)
+        camera_layout.addWidget(self.view_front_btn, 0, 2)
+        
+        self.view_iso_btn = QPushButton("🔲 Isometric")
+        self.view_iso_btn.clicked.connect(lambda: self.set_camera_view('iso'))
+        self.view_iso_btn.setMinimumHeight(32)
+        camera_layout.addWidget(self.view_iso_btn, 1, 0)
+        
+        self.follow_drone_checkbox = QCheckBox("Follow Drone")
+        self.follow_drone_checkbox.setFont(QFont("Arial", 9))
+        self.follow_drone_checkbox.stateChanged.connect(self.toggle_follow_drone)
+        camera_layout.addWidget(self.follow_drone_checkbox, 1, 1, 1, 2)
+        
+        camera_group.setLayout(camera_layout)
+        left_panel.addWidget(camera_group)
+        
+        # Visual options group
+        visual_group = QGroupBox("Visual Options")
+        visual_group.setFont(QFont("Arial", 10, QFont.Bold))
+        visual_layout = QVBoxLayout()
+        visual_layout.setSpacing(6)
+        visual_layout.setContentsMargins(10, 12, 10, 10)
+        
+        self.show_trail_checkbox = QCheckBox("Show Trail Effect")
+        self.show_trail_checkbox.setFont(QFont("Arial", 9))
+        self.show_trail_checkbox.setChecked(True)
+        self.show_trail_checkbox.stateChanged.connect(self.toggle_trail)
+        visual_layout.addWidget(self.show_trail_checkbox)
+        
+        self.show_velocity_checkbox = QCheckBox("Show Velocity Vector")
+        self.show_velocity_checkbox.setFont(QFont("Arial", 9))
+        self.show_velocity_checkbox.setChecked(True)
+        self.show_velocity_checkbox.stateChanged.connect(self.toggle_velocity_vector)
+        visual_layout.addWidget(self.show_velocity_checkbox)
+        
+        self.show_connections_checkbox = QCheckBox("Show Waypoint Connections")
+        self.show_connections_checkbox.setFont(QFont("Arial", 9))
+        self.show_connections_checkbox.setChecked(True)
+        self.show_connections_checkbox.stateChanged.connect(self.toggle_connections)
+        visual_layout.addWidget(self.show_connections_checkbox)
+        
+        self.show_target_line_checkbox = QCheckBox("Show Target Line")
+        self.show_target_line_checkbox.setFont(QFont("Arial", 9))
+        self.show_target_line_checkbox.setChecked(True)
+        self.show_target_line_checkbox.stateChanged.connect(self.toggle_target_line)
+        visual_layout.addWidget(self.show_target_line_checkbox)
+        
+        visual_group.setLayout(visual_layout)
+        left_panel.addWidget(visual_group)
         
         # Middle panel - Waypoint management
         middle_panel = QVBoxLayout()
@@ -687,51 +809,185 @@ class DroneSimulationWindow(QMainWindow):
         self.setStyleSheet(stylesheet)
     
     def setup_3d_scene(self):
-        """Setup 3D visualization scene"""
-        # Grid with light grey
-        grid = gl.GLGridItem()
-        grid.scale(2, 2, 1)
-        grid.setColor((200, 200, 200, 120))
-        self.plot_widget.addItem(grid)
+        """Setup 3D visualization scene with enhanced graphics"""
+        # Main grid (major grid lines)
+        self.main_grid = gl.GLGridItem()
+        self.main_grid.scale(5, 5, 1)
+        self.main_grid.setColor((180, 180, 180, 100))
+        self.plot_widget.addItem(self.main_grid)
         
-        # Trajectory line with modern blue appearance
+        # Fine grid (minor grid lines)
+        self.fine_grid = gl.GLGridItem()
+        self.fine_grid.scale(1, 1, 1)
+        self.fine_grid.setColor((220, 220, 220, 40))
+        self.plot_widget.addItem(self.fine_grid)
+        
+        # Add coordinate axes
+        self.setup_axes()
+        
+        # Trajectory line with enhanced appearance
         self.trajectory_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.20, 0.60, 0.86, 0.9),  # Blue
-            width=3.5,
+            color=(0.20, 0.60, 0.86, 0.95),
+            width=4.0,
             antialias=True
         )
         self.plot_widget.addItem(self.trajectory_line)
         
-        # Drone marker (bright blue)
+        # Trail effect (shows recent path)
+        self.trail_line = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0]]),
+            color=(0.95, 0.40, 0.20, 0.8),  # Orange trail
+            width=6.0,
+            antialias=True
+        )
+        self.plot_widget.addItem(self.trail_line)
+        
+        # Waypoint connection lines
+        self.waypoint_connections = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0]]),
+            color=(0.15, 0.65, 0.60, 0.4),  # Semi-transparent teal
+            width=2.0,
+            antialias=True,
+            mode='line_strip'
+        )
+        self.plot_widget.addItem(self.waypoint_connections)
+        
+        # Current target line (from drone to current waypoint)
+        self.target_line = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0], [0, 0, 0]]),
+            color=(1.0, 0.8, 0.0, 0.6),  # Golden yellow
+            width=2.5,
+            antialias=True
+        )
+        self.plot_widget.addItem(self.target_line)
+        
+        # Velocity vector
+        self.velocity_vector = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0], [0, 0, 0]]),
+            color=(0.2, 0.8, 0.2, 0.9),  # Green
+            width=3.0,
+            antialias=True
+        )
+        self.plot_widget.addItem(self.velocity_vector)
+        
+        # Drone marker with glow effect (multiple layers)
+        self.drone_marker_glow = gl.GLScatterPlotItem(
+            pos=np.array([[0, 0, 5]]),
+            color=(0.20, 0.60, 0.86, 0.3),
+            size=35,
+            pxMode=True
+        )
+        self.plot_widget.addItem(self.drone_marker_glow)
+        
         self.drone_marker = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 5]]),
             color=(0.20, 0.60, 0.86, 1.0),
-            size=18,
+            size=22,
             pxMode=True
         )
         self.plot_widget.addItem(self.drone_marker)
         
-        # Waypoint markers (teal/turquoise)
+        # Waypoint markers with glow (teal/turquoise)
+        self.waypoint_markers_glow = gl.GLScatterPlotItem(
+            pos=np.array([[0, 0, 0]]),
+            color=(0.15, 0.65, 0.60, 0.25),
+            size=35,
+            pxMode=True
+        )
+        self.plot_widget.addItem(self.waypoint_markers_glow)
+        
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 1.0),  # Teal
-            size=20,
+            color=(0.15, 0.65, 0.60, 1.0),
+            size=24,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
         
-        # User waypoint markers (purple)
+        # Current target waypoint highlight (animated)
+        self.target_waypoint_marker = gl.GLScatterPlotItem(
+            pos=np.array([[0, 0, 0]]),
+            color=(1.0, 0.8, 0.0, 0.9),  # Golden
+            size=32,
+            pxMode=True
+        )
+        self.plot_widget.addItem(self.target_waypoint_marker)
+        
+        # User waypoint markers with glow (purple)
+        self.user_waypoint_markers_glow = gl.GLScatterPlotItem(
+            pos=np.array([[0, 0, 0]]),
+            color=(0.67, 0.28, 0.73, 0.25),
+            size=40,
+            pxMode=True
+        )
+        self.plot_widget.addItem(self.user_waypoint_markers_glow)
+        
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.67, 0.28, 0.73, 1.0),  # Purple
-            size=22,
+            color=(0.67, 0.28, 0.73, 1.0),
+            size=26,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers)
         
+        # Animation timer for pulsing effects
+        self.animation_phase = 0
+        self.animation_timer = QTimer()
+        self.animation_timer.timeout.connect(self.update_animations)
+        self.animation_timer.start(50)  # 20 FPS for animations
+        
         # Connect mouse events
         self.plot_widget.mousePressEvent = self.on_3d_click
+    
+    def setup_axes(self):
+        """Setup coordinate axes with labels"""
+        axis_length = 50
+        axis_width = 3.0
+        
+        # X axis (Red)
+        x_axis = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0], [axis_length, 0, 0]]),
+            color=(0.9, 0.2, 0.2, 0.7),
+            width=axis_width,
+            antialias=True
+        )
+        self.plot_widget.addItem(x_axis)
+        
+        # Y axis (Green)
+        y_axis = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0], [0, axis_length, 0]]),
+            color=(0.2, 0.9, 0.2, 0.7),
+            width=axis_width,
+            antialias=True
+        )
+        self.plot_widget.addItem(y_axis)
+        
+        # Z axis (Blue)
+        z_axis = gl.GLLinePlotItem(
+            pos=np.array([[0, 0, 0], [0, 0, axis_length]]),
+            color=(0.2, 0.2, 0.9, 0.7),
+            width=axis_width,
+            antialias=True
+        )
+        self.plot_widget.addItem(z_axis)
+    
+    def update_animations(self):
+        """Update animated elements like pulsing markers"""
+        self.animation_phase = (self.animation_phase + 0.1) % (2 * np.pi)
+        pulse = 0.8 + 0.2 * np.sin(self.animation_phase)
+        
+        # Pulse the target waypoint marker
+        if self.current_trajectory is not None and self.current_step < len(self.current_trajectory['positions']):
+            waypoints = self.current_trajectory['waypoints']
+            wp_indices = self.current_trajectory['waypoint_indices']
+            wp_idx = min(wp_indices[self.current_step], len(waypoints) - 1)
+            
+            # Update target waypoint size with pulse
+            self.target_waypoint_marker.setData(
+                pos=np.array([waypoints[wp_idx]]),
+                size=int(32 * pulse)
+            )
     
     def on_3d_click(self, event):
         """Handle clicks on the 3D view to add waypoints"""
@@ -836,9 +1092,11 @@ class DroneSimulationWindow(QMainWindow):
         if self.user_waypoints:
             positions = np.array(self.user_waypoints)
             self.user_waypoint_markers.setData(pos=positions)
+            self.user_waypoint_markers_glow.setData(pos=positions)
         else:
             # Hide markers by placing them off-screen
             self.user_waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
+            self.user_waypoint_markers_glow.setData(pos=np.array([[1000, 1000, 1000]]))
     
     def toggle_dynamic_mode(self, state):
         """Toggle dynamic waypoint modification mode"""
@@ -983,25 +1241,79 @@ class DroneSimulationWindow(QMainWindow):
         # Update waypoint markers
         waypoints = self.current_trajectory['waypoints']
         self.waypoint_markers.setData(pos=waypoints)
+        self.waypoint_markers_glow.setData(pos=waypoints)
+        
+        # Update waypoint connections
+        if len(waypoints) > 1:
+            self.waypoint_connections.setData(pos=waypoints)
     
     def toggle_play(self):
         """Toggle play/pause"""
         self.is_playing = not self.is_playing
         
         if self.is_playing:
-            self.play_btn.setText("Pause")
+            self.play_btn.setText("⏸ Pause")
             self.timer.start(int(100 / self.playback_speed))  # 100ms base
             self.statusBar().showMessage("Simulation playing", 2000)
         else:
-            self.play_btn.setText("Play")
+            self.play_btn.setText("▶ Play")
             self.timer.stop()
             self.statusBar().showMessage("Simulation paused", 2000)
+    
+    def set_camera_view(self, view_type):
+        """Set predefined camera views"""
+        if view_type == 'top':
+            self.plot_widget.setCameraPosition(elevation=90, azimuth=0, distance=100)
+            self.statusBar().showMessage("Camera: Top View", 2000)
+        elif view_type == 'side':
+            self.plot_widget.setCameraPosition(elevation=0, azimuth=0, distance=100)
+            self.statusBar().showMessage("Camera: Side View", 2000)
+        elif view_type == 'front':
+            self.plot_widget.setCameraPosition(elevation=0, azimuth=90, distance=100)
+            self.statusBar().showMessage("Camera: Front View", 2000)
+        elif view_type == 'iso':
+            self.plot_widget.setCameraPosition(elevation=30, azimuth=45, distance=100)
+            self.statusBar().showMessage("Camera: Isometric View", 2000)
+    
+    def toggle_follow_drone(self, state):
+        """Toggle camera follow mode for drone"""
+        self.follow_drone_enabled = (state == Qt.Checked)
+        if self.follow_drone_enabled:
+            self.statusBar().showMessage("Follow mode enabled - Camera will track drone", 2000)
+        else:
+            self.statusBar().showMessage("Follow mode disabled", 2000)
+    
+    def toggle_trail(self, state):
+        """Toggle trail effect visibility"""
+        self.show_trail = (state == Qt.Checked)
+        if not self.show_trail:
+            self.trail_line.setData(pos=np.array([[0, 0, 0]]))
+    
+    def toggle_velocity_vector(self, state):
+        """Toggle velocity vector visibility"""
+        self.show_velocity = (state == Qt.Checked)
+        if not self.show_velocity:
+            self.velocity_vector.setData(pos=np.array([[0, 0, 0], [0, 0, 0]]))
+    
+    def toggle_connections(self, state):
+        """Toggle waypoint connections visibility"""
+        self.show_connections = (state == Qt.Checked)
+        if not self.show_connections:
+            self.waypoint_connections.setData(pos=np.array([[0, 0, 0]]))
+        else:
+            self.update_3d_scene()
+    
+    def toggle_target_line(self, state):
+        """Toggle target line visibility"""
+        self.show_target_line = (state == Qt.Checked)
+        if not self.show_target_line:
+            self.target_line.setData(pos=np.array([[0, 0, 0], [0, 0, 0]]))
     
     def reset_simulation(self):
         """Reset simulation to start"""
         self.current_step = 0
         self.is_playing = False
-        self.play_btn.setText("Play")
+        self.play_btn.setText("▶ Play")
         self.timer.stop()
         self.update_visualization()
         self.statusBar().showMessage("Simulation reset to start", 2000)
@@ -1024,7 +1336,7 @@ class DroneSimulationWindow(QMainWindow):
         if self.current_step >= len(self.current_trajectory['positions']):
             self.current_step = len(self.current_trajectory['positions']) - 1
             self.is_playing = False
-            self.play_btn.setText("Play")
+            self.play_btn.setText("▶ Play")
             self.timer.stop()
             self.statusBar().showMessage("Simulation complete!", 3000)
         
@@ -1050,21 +1362,51 @@ class DroneSimulationWindow(QMainWindow):
         wp_idx = min(wp_indices[self.current_step], len(waypoints) - 1)
         current_wp = waypoints[wp_idx]
         
-        # Update drone marker
+        # Update drone marker with glow
         self.drone_marker.setData(pos=np.array([pos]))
+        self.drone_marker_glow.setData(pos=np.array([pos]))
+        
+        # Update trail effect
+        if self.show_trail and self.current_step > 0:
+            trail_start = max(0, self.current_step - self.trail_length)
+            trail_positions = positions[trail_start:self.current_step + 1]
+            if len(trail_positions) > 1:
+                self.trail_line.setData(pos=trail_positions)
+        
+        # Update velocity vector
+        if self.show_velocity:
+            vel_magnitude = np.linalg.norm(vel)
+            if vel_magnitude > 0.1:
+                # Scale velocity vector for visibility
+                vel_scaled = vel * 3.0
+                vel_end = pos + vel_scaled
+                self.velocity_vector.setData(pos=np.array([pos, vel_end]))
+        
+        # Update target line (drone to current waypoint)
+        if self.show_target_line:
+            self.target_line.setData(pos=np.array([pos, current_wp]))
+        
+        # Camera follow mode
+        if self.follow_drone_enabled:
+            # Center camera on drone position
+            self.plot_widget.opts['center'] = pg.Vector(pos[0], pos[1], pos[2])
+        
+        # Calculate additional metrics
+        distance_to_wp = np.linalg.norm(current_wp - pos)
+        speed = np.linalg.norm(vel)
         
         # Update info labels
         self.info_labels['position'].setText(
             f"({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f})"
         )
         self.info_labels['velocity'].setText(
-            f"({vel[0]:.2f}, {vel[1]:.2f}, {vel[2]:.2f}) m/s"
+            f"{speed:.2f} m/s | ({vel[0]:.1f}, {vel[1]:.1f}, {vel[2]:.1f})"
         )
         self.info_labels['acceleration'].setText(
             f"({acc[0]:.2f}, {acc[1]:.2f}, {acc[2]:.2f}) m/s²"
         )
         self.info_labels['waypoint'].setText(
-            f"#{wp_idx+1} ({current_wp[0]:.1f}, {current_wp[1]:.1f}, {current_wp[2]:.1f})"
+            f"#{wp_idx+1} | Dist: {distance_to_wp:.1f}m"
         )
         self.info_labels['time'].setText(f"{time:.1f}s")
         self.info_labels['progress'].setText(
