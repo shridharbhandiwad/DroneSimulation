@@ -6,7 +6,9 @@ import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QSlider, QGroupBox,
                              QGridLayout, QLineEdit, QMessageBox, QListWidget, 
-                             QListWidgetItem, QSplitter, QFrame, QCheckBox, QStackedLayout)
+                             QListWidgetItem, QSplitter, QFrame, QCheckBox, QStackedLayout,
+                             QMenuBar, QMenu, QAction, QDialog, QDialogButtonBox, QSpinBox,
+                             QDoubleSpinBox, QTextEdit, QScrollArea, QFormLayout, QComboBox)
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QFont, QColor, QPalette
 import pyqtgraph as pg
@@ -96,6 +98,288 @@ class CameraSimulator:
         return frame
 
 
+class SettingsDialog(QDialog):
+    """Settings dialog for configuring application preferences"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent_window = parent
+        self.setWindowTitle("Settings")
+        self.setModal(True)
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(400)
+        
+        # Create layout
+        layout = QVBoxLayout()
+        
+        # Create scroll area for settings
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        scroll_layout = QFormLayout(scroll_widget)
+        scroll_layout.setSpacing(12)
+        scroll_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Visual Options Section
+        visual_label = QLabel("<b>Visual Options</b>")
+        scroll_layout.addRow(visual_label)
+        
+        self.trail_checkbox = QCheckBox()
+        self.trail_checkbox.setChecked(parent.show_trail if parent else False)
+        scroll_layout.addRow("Show Trail Effect:", self.trail_checkbox)
+        
+        self.velocity_checkbox = QCheckBox()
+        self.velocity_checkbox.setChecked(parent.show_velocity if parent else False)
+        scroll_layout.addRow("Show Velocity Vector:", self.velocity_checkbox)
+        
+        self.connections_checkbox = QCheckBox()
+        self.connections_checkbox.setChecked(parent.show_connections if parent else False)
+        scroll_layout.addRow("Show Waypoint Connections:", self.connections_checkbox)
+        
+        self.target_line_checkbox = QCheckBox()
+        self.target_line_checkbox.setChecked(parent.show_target_line if parent else False)
+        scroll_layout.addRow("Show Target Line:", self.target_line_checkbox)
+        
+        self.trail_length_spin = QSpinBox()
+        self.trail_length_spin.setRange(5, 100)
+        self.trail_length_spin.setValue(parent.trail_length if parent else 20)
+        scroll_layout.addRow("Trail Length (points):", self.trail_length_spin)
+        
+        # Theme Section
+        theme_label = QLabel("<b>Theme Settings</b>")
+        scroll_layout.addRow(theme_label)
+        
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["White", "Black"])
+        current_theme = parent.current_theme if parent else 'white'
+        self.theme_combo.setCurrentText(current_theme.capitalize())
+        scroll_layout.addRow("Color Theme:", self.theme_combo)
+        
+        # Camera Section
+        camera_label = QLabel("<b>Camera Settings</b>")
+        scroll_layout.addRow(camera_label)
+        
+        self.follow_drone_checkbox = QCheckBox()
+        self.follow_drone_checkbox.setChecked(parent.follow_drone_enabled if parent else False)
+        scroll_layout.addRow("Follow Drone Mode:", self.follow_drone_checkbox)
+        
+        # Playback Section
+        playback_label = QLabel("<b>Playback Settings</b>")
+        scroll_layout.addRow(playback_label)
+        
+        self.playback_speed_spin = QDoubleSpinBox()
+        self.playback_speed_spin.setRange(0.1, 5.0)
+        self.playback_speed_spin.setSingleStep(0.1)
+        self.playback_speed_spin.setValue(parent.playback_speed if parent else 1.0)
+        scroll_layout.addRow("Playback Speed:", self.playback_speed_spin)
+        
+        self.auto_play_checkbox = QCheckBox()
+        self.auto_play_checkbox.setChecked(parent.auto_play_enabled if parent else True)
+        scroll_layout.addRow("Auto-Play on Generate:", self.auto_play_checkbox)
+        
+        # Waypoint Section
+        waypoint_label = QLabel("<b>Waypoint Settings</b>")
+        scroll_layout.addRow(waypoint_label)
+        
+        self.click_height_spin = QDoubleSpinBox()
+        self.click_height_spin.setRange(1.0, 100.0)
+        self.click_height_spin.setValue(parent.click_height if parent else 10.0)
+        scroll_layout.addRow("Click Waypoint Height (m):", self.click_height_spin)
+        
+        self.click_speed_spin = QDoubleSpinBox()
+        self.click_speed_spin.setRange(0.1, 50.0)
+        self.click_speed_spin.setValue(parent.click_speed if parent else 10.0)
+        scroll_layout.addRow("Click Waypoint Speed (m/s):", self.click_speed_spin)
+        
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll)
+        
+        # Buttons
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel | QDialogButtonBox.Apply
+        )
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        button_box.button(QDialogButtonBox.Apply).clicked.connect(self.apply_settings)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+    
+    def apply_settings(self):
+        """Apply settings to parent window"""
+        if self.parent_window:
+            # Visual options
+            self.parent_window.show_trail = self.trail_checkbox.isChecked()
+            self.parent_window.show_velocity = self.velocity_checkbox.isChecked()
+            self.parent_window.show_connections = self.connections_checkbox.isChecked()
+            self.parent_window.show_target_line = self.target_line_checkbox.isChecked()
+            self.parent_window.trail_length = self.trail_length_spin.value()
+            
+            # Update checkboxes in main window
+            self.parent_window.show_trail_checkbox.setChecked(self.trail_checkbox.isChecked())
+            self.parent_window.show_velocity_checkbox.setChecked(self.velocity_checkbox.isChecked())
+            self.parent_window.show_connections_checkbox.setChecked(self.connections_checkbox.isChecked())
+            self.parent_window.show_target_line_checkbox.setChecked(self.target_line_checkbox.isChecked())
+            
+            # Theme
+            new_theme = self.theme_combo.currentText().lower()
+            if new_theme != self.parent_window.current_theme:
+                self.parent_window.switch_theme(new_theme)
+            
+            # Camera
+            was_following = self.parent_window.follow_drone_enabled
+            self.parent_window.follow_drone_enabled = self.follow_drone_checkbox.isChecked()
+            self.parent_window.follow_drone_checkbox.setChecked(self.follow_drone_checkbox.isChecked())
+            
+            # Playback
+            self.parent_window.playback_speed = self.playback_speed_spin.value()
+            slider_value = int(self.playback_speed_spin.value() * 10)
+            self.parent_window.playback_speed_slider.setValue(slider_value)
+            
+            self.parent_window.auto_play_enabled = self.auto_play_checkbox.isChecked()
+            self.parent_window.auto_play_checkbox.setChecked(self.auto_play_checkbox.isChecked())
+            
+            # Waypoints
+            self.parent_window.click_height = self.click_height_spin.value()
+            self.parent_window.height_input.setText(str(self.click_height_spin.value()))
+            
+            self.parent_window.click_speed = self.click_speed_spin.value()
+            self.parent_window.waypoint_speed_input.setText(str(self.click_speed_spin.value()))
+            
+            # Update visualization
+            self.parent_window.update_3d_scene()
+            
+            self.parent_window.statusBar().showMessage("Settings applied successfully", 3000)
+    
+    def accept(self):
+        """Apply settings and close"""
+        self.apply_settings()
+        super().accept()
+
+
+class WhatsNewDialog(QDialog):
+    """Dialog showing recent changes and improvements"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("What's New")
+        self.setModal(False)
+        self.setMinimumWidth(700)
+        self.setMinimumHeight(600)
+        
+        layout = QVBoxLayout()
+        
+        # Title
+        title = QLabel("<h2>Recent Updates and Improvements</h2>")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Content
+        text_edit = QTextEdit()
+        text_edit.setReadOnly(True)
+        text_edit.setHtml(self.get_changelog_html())
+        layout.addWidget(text_edit)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+        
+        self.setLayout(layout)
+    
+    def get_changelog_html(self):
+        """Generate HTML for changelog"""
+        return """
+        <html>
+        <body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+        
+        <h3>🎨 Version 2.0 - Major UI Overhaul</h3>
+        <ul>
+            <li><b>Enhanced 3D Visualization</b>
+                <ul>
+                    <li>Dual-layer grid system (major 5m + minor 1m grids)</li>
+                    <li>Color-coded coordinate axes (Red=X, Green=Y, Blue=Z)</li>
+                    <li>Glow effects on all markers</li>
+                    <li>Antialiasing on all lines</li>
+                </ul>
+            </li>
+            <li><b>Dynamic Visual Elements</b>
+                <ul>
+                    <li>Trail Effect: Orange trail showing last 20 positions</li>
+                    <li>Velocity Vector: Green arrow showing speed and direction</li>
+                    <li>Target Line: Golden line to current waypoint</li>
+                    <li>Waypoint Connections: Cyan lines connecting waypoints</li>
+                    <li>Animated Target: Pulsing current waypoint</li>
+                </ul>
+            </li>
+            <li><b>Camera Controls</b>
+                <ul>
+                    <li>4 Preset Views: Top, Side, Front, Isometric</li>
+                    <li>Follow Drone Mode: Camera tracks drone automatically</li>
+                    <li>Smooth camera transitions</li>
+                </ul>
+            </li>
+            <li><b>Theme Support</b>
+                <ul>
+                    <li>White theme for bright environments</li>
+                    <li>Black theme for low-light conditions</li>
+                    <li>Theme-aware colors for all elements</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h3>🆕 Version 1.5 - Dynamic Waypoints</h3>
+        <ul>
+            <li><b>Real-time Waypoint Modification</b>
+                <ul>
+                    <li>Add waypoints during flight</li>
+                    <li>Modify waypoints on-the-fly</li>
+                    <li>Remove waypoints in real-time</li>
+                    <li>~3ms trajectory regeneration time</li>
+                </ul>
+            </li>
+            <li><b>Click-to-Add Mode</b>
+                <ul>
+                    <li>Click on 3D view to add waypoints</li>
+                    <li>Configurable height and speed</li>
+                    <li>Visual feedback for new waypoints</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h3>🚀 Version 1.0 - Core Features</h3>
+        <ul>
+            <li><b>Physics-Based Trajectory Generation</b>
+                <ul>
+                    <li>Realistic drone dynamics</li>
+                    <li>Acceleration and velocity limits</li>
+                    <li>Smooth waypoint transitions</li>
+                </ul>
+            </li>
+            <li><b>ML-Powered Prediction</b>
+                <ul>
+                    <li>LSTM neural network</li>
+                    <li>Time-series trajectory prediction</li>
+                    <li>ONNX export for C++ integration</li>
+                </ul>
+            </li>
+            <li><b>3D Visualization</b>
+                <ul>
+                    <li>Real-time OpenGL rendering</li>
+                    <li>Interactive camera controls</li>
+                    <li>Rich telemetry display</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <hr>
+        <p><i>For more details, see the documentation files in the workspace folder.</i></p>
+        
+        </body>
+        </html>
+        """
+
+
 class DroneSimulationWindow(QMainWindow):
     """Main simulation window"""
     
@@ -154,6 +438,7 @@ class DroneSimulationWindow(QMainWindow):
         
         # Setup UI
         self.setup_ui()
+        self.setup_menu_bar()
         self.apply_stylesheet()
         
         # Add status bar
@@ -590,6 +875,75 @@ class DroneSimulationWindow(QMainWindow):
         # Add panels to main layout with better proportions (camera disabled)
         main_layout.addLayout(left_panel, 5)
         main_layout.addLayout(middle_panel, 3)
+    
+    def setup_menu_bar(self):
+        """Setup the menu bar with File, Settings, and Help menus"""
+        menubar = self.menuBar()
+        
+        # File Menu
+        file_menu = menubar.addMenu("&File")
+        
+        exit_action = QAction("E&xit", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.setStatusTip("Exit application")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+        
+        # Settings Menu
+        settings_menu = menubar.addMenu("&Settings")
+        
+        preferences_action = QAction("&Preferences...", self)
+        preferences_action.setShortcut("Ctrl+,")
+        preferences_action.setStatusTip("Open settings dialog")
+        preferences_action.triggered.connect(self.open_settings)
+        settings_menu.addAction(preferences_action)
+        
+        # Help Menu
+        help_menu = menubar.addMenu("&Help")
+        
+        whats_new_action = QAction("&What's New", self)
+        whats_new_action.setStatusTip("View recent changes and improvements")
+        whats_new_action.triggered.connect(self.open_whats_new)
+        help_menu.addAction(whats_new_action)
+        
+        help_menu.addSeparator()
+        
+        about_action = QAction("&About", self)
+        about_action.setStatusTip("About this application")
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+    
+    def open_settings(self):
+        """Open the settings dialog"""
+        dialog = SettingsDialog(self)
+        dialog.exec_()
+    
+    def open_whats_new(self):
+        """Open the What's New dialog"""
+        dialog = WhatsNewDialog(self)
+        dialog.show()
+    
+    def show_about(self):
+        """Show about dialog"""
+        about_text = """
+        <h2>Drone Trajectory Simulation Pro</h2>
+        <p><b>Version 2.0</b></p>
+        <p>A comprehensive ML-powered drone trajectory prediction system with 
+        physics-based simulation, 3D visualization, and real-time inference capabilities.</p>
+        <br>
+        <p><b>Features:</b></p>
+        <ul>
+            <li>Physics-based trajectory generation</li>
+            <li>LSTM neural network prediction</li>
+            <li>Real-time 3D visualization</li>
+            <li>Dynamic waypoint modification</li>
+            <li>Multiple themes and visual options</li>
+            <li>ONNX export for C++ integration</li>
+        </ul>
+        <br>
+        <p><i>For documentation, see the README.md and other docs in the workspace folder.</i></p>
+        """
+        QMessageBox.about(self, "About Drone Simulation", about_text)
     
     def switch_theme(self, theme):
         """Switch between white and black themes"""
