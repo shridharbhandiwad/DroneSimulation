@@ -1,0 +1,13 @@
+# Example waypoints for drone trajectory
+# Format: x y z (one waypoint per line)
+# Lines starting with # are comments
+
+# Simple square pattern at 5m altitude
+10 10 5
+10 -10 5
+-10 -10 5
+-10 10 5
+0 0 5
+
+# You can load this file in your C++ program or use it as a reference
+# for interactive waypoint input
