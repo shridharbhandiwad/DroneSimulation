@@ -9,6 +9,11 @@
 #include <iostream>
 #include <algorithm>
 
+#ifdef _WIN32
+#include <locale>
+#include <codecvt>
+#endif
+
 namespace drone {
 
 // ============================================================================
@@ -112,7 +117,15 @@ bool TrajectoryPredictor::initialize() {
         session_options_->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
         
         // Create session
+        #ifdef _WIN32
+        // On Windows, convert to wide string
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        std::wstring wide_model_path = converter.from_bytes(model_path_);
+        session_ = std::make_unique<Ort::Session>(*env_, wide_model_path.c_str(), *session_options_);
+        #else
+        // On Linux/Mac, use narrow string
         session_ = std::make_unique<Ort::Session>(*env_, model_path_.c_str(), *session_options_);
+        #endif
         
         // Get input/output names
         input_names_.push_back("input_sequence");
