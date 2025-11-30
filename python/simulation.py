@@ -163,13 +163,12 @@ class DroneSimulationWindow(QMainWindow):
         view_title = QLabel("3D Trajectory View")
         view_title.setFont(QFont("Arial", 12, QFont.Bold))
         view_title.setStyleSheet("""
-            color: #1e3a5f; 
+            color: #2c3e50; 
             padding: 8px;
             margin-left: 2px;
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #f5f1e8, stop:1 #ffffff);
+            background: white;
             border-radius: 6px;
-            border-left: 5px solid #d4af37;
+            border-left: 4px solid #3498db;
         """)
         view_header.addWidget(view_title)
         left_panel.addLayout(view_header)
@@ -181,7 +180,7 @@ class DroneSimulationWindow(QMainWindow):
             #plot3dContainer {
                 background: white;
                 border-radius: 8px;
-                border: 1px solid #d0d0d0;
+                border: 1px solid #e0e0e0;
             }
         """)
         plot_layout = QVBoxLayout(plot_container)
@@ -190,7 +189,7 @@ class DroneSimulationWindow(QMainWindow):
         self.plot_widget = gl.GLViewWidget()
         self.plot_widget.setMinimumSize(900, 580)
         self.plot_widget.setCameraPosition(distance=100)
-        self.plot_widget.setBackgroundColor('#faf8f3')
+        self.plot_widget.setBackgroundColor('#ffffff')
         self.plot_widget.setObjectName("plot3d")
         plot_layout.addWidget(self.plot_widget)
         left_panel.addWidget(plot_container)
@@ -235,7 +234,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.speed_slider, 1, 1)
         
         self.speed_label = QLabel("1.0x")
-        self.speed_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #8b6914;")
+        self.speed_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #3498db;")
         control_layout.addWidget(self.speed_label, 1, 2)
         
         control_group.setLayout(control_layout)
@@ -275,7 +274,7 @@ class DroneSimulationWindow(QMainWindow):
         self.height_slider.valueChanged.connect(self.update_click_height)
         height_control.addWidget(self.height_slider)
         self.height_label = QLabel("10m")
-        self.height_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #8b6914; min-width: 40px;")
+        self.height_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #3498db; min-width: 40px;")
         height_control.addWidget(self.height_label)
         height_layout.addLayout(height_control)
         waypoint_layout.addLayout(height_layout)
@@ -357,10 +356,10 @@ class DroneSimulationWindow(QMainWindow):
         
         for i, (label, key) in enumerate(info_items):
             label_widget = QLabel(f"{label}:")
-            label_widget.setStyleSheet("font-weight: 600; font-size: 9pt; color: #4a4a4a;")
+            label_widget.setStyleSheet("font-weight: 600; font-size: 9pt; color: #555555;")
             info_layout.addWidget(label_widget, i, 0)
             value_label = QLabel("N/A")
-            value_label.setStyleSheet("font-size: 9pt; color: #8b6914; font-weight: 600;")
+            value_label.setStyleSheet("font-size: 9pt; color: #3498db; font-weight: 600;")
             self.info_labels[key] = value_label
             info_layout.addWidget(value_label, i, 1)
         
@@ -377,16 +376,16 @@ class DroneSimulationWindow(QMainWindow):
         ml_status.setStyleSheet("""
             font-size: 9pt; 
             padding: 8px; 
-            background-color: #d4edda;
+            background-color: #e8f5e9;
             border-radius: 4px;
-            color: #2d5016;
+            color: #2e7d32;
             font-weight: 600;
         """ if self.use_ml else """
             font-size: 9pt; 
             padding: 8px; 
-            background-color: #e8dcc5;
+            background-color: #e3f2fd;
             border-radius: 4px;
-            color: #1e3a5f;
+            color: #1976d2;
             font-weight: 600;
         """)
         ml_layout.addWidget(ml_status)
@@ -444,20 +443,18 @@ class DroneSimulationWindow(QMainWindow):
         main_layout.addLayout(middle_panel, 3)
     
     def apply_stylesheet(self):
-        """Apply elegant, classic stylesheet to the application"""
+        """Apply modern white theme stylesheet to the application"""
         stylesheet = """
             QMainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #faf8f3, stop:1 #f0ebe0);
+                background: #f5f5f5;
             }
             
             QGroupBox {
-                border: 2px solid #c8b896;
+                border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 margin-top: 12px;
                 padding: 12px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #fdfbf7);
+                background: white;
                 font-weight: 600;
             }
             
@@ -465,17 +462,17 @@ class DroneSimulationWindow(QMainWindow):
                 subcontrol-origin: margin;
                 left: 12px;
                 padding: 0 8px;
-                color: #1e3a5f;
+                color: #2c3e50;
                 background: transparent;
             }
             
             /* Primary action buttons */
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #2c5282, stop:1 #1e3a5f);
+                    stop:0 #5a9fd4, stop:1 #3498db);
                 color: white;
-                border: 1px solid #1a2f4a;
-                border-radius: 5px;
+                border: 1px solid #2980b9;
+                border-radius: 6px;
                 padding: 8px 16px;
                 font-weight: 600;
                 font-size: 9pt;
@@ -484,120 +481,119 @@ class DroneSimulationWindow(QMainWindow):
             
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #3d6399, stop:1 #2c5282);
-                border: 1px solid #d4af37;
+                    stop:0 #6bb1e0, stop:1 #5a9fd4);
+                border: 1px solid #2980b9;
             }
             
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #1a2f4a, stop:1 #0f1f33);
+                    stop:0 #2980b9, stop:1 #2471a3);
                 padding: 10px 17px 8px 19px;
             }
             
-            /* Play button - forest green accent */
+            /* Play button - green accent */
             QPushButton#playButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #3d7218, stop:1 #2d5016);
+                    stop:0 #66bb6a, stop:1 #4caf50);
             }
             
             QPushButton#playButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4d8a20, stop:1 #3d7218);
-                border: 1px solid #d4af37;
+                    stop:0 #7bc67e, stop:1 #66bb6a);
+                border: 1px solid #43a047;
             }
             
-            /* Reset button - amber/gold accent */
+            /* Reset button - orange accent */
             QPushButton#resetButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #d4af37, stop:1 #b8860b);
+                    stop:0 #ffa726, stop:1 #ff9800);
             }
             
             QPushButton#resetButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e5c158, stop:1 #d4af37);
-                border: 1px solid #8b6914;
+                    stop:0 #ffb74d, stop:1 #ffa726);
+                border: 1px solid #f57c00;
             }
             
-            /* Random trajectory button - burgundy accent */
+            /* Random trajectory button - purple accent */
             QPushButton#newTrajButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #8b3a3a, stop:1 #722f37);
+                    stop:0 #ab47bc, stop:1 #9c27b0);
             }
             
             QPushButton#newTrajButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #9f4a4a, stop:1 #8b3a3a);
-                border: 1px solid #d4af37;
+                    stop:0 #ba68c8, stop:1 #ab47bc);
+                border: 1px solid #8e24aa;
             }
             
-            /* Generate button - bronze accent */
+            /* Generate button - teal accent */
             QPushButton#generateButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #8b6914, stop:1 #6b5410);
+                    stop:0 #26a69a, stop:1 #009688);
             }
             
             QPushButton#generateButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #a07c18, stop:1 #8b6914);
-                border: 1px solid #d4af37;
+                    stop:0 #4db6ac, stop:1 #26a69a);
+                border: 1px solid #00897b;
             }
             
-            /* Apply button - steel blue accent */
+            /* Apply button - indigo accent */
             QPushButton#applyButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4682b4, stop:1 #36648b);
+                    stop:0 #5c6bc0, stop:1 #3f51b5);
             }
             
             QPushButton#applyButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #5a9bd5, stop:1 #4682b4);
-                border: 1px solid #d4af37;
+                    stop:0 #7986cb, stop:1 #5c6bc0);
+                border: 1px solid #3949ab;
             }
             
             QPushButton#applyButton:disabled {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #a8a8a8, stop:1 #888888);
-                color: #d0d0d0;
-                border: 1px solid #707070;
+                    stop:0 #bdbdbd, stop:1 #9e9e9e);
+                color: #e0e0e0;
+                border: 1px solid #757575;
             }
             
-            /* Remove button - dark red accent */
+            /* Remove button - red accent */
             QPushButton#removeButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #a52a2a, stop:1 #8b1a1a);
+                    stop:0 #ef5350, stop:1 #f44336);
             }
             
             QPushButton#removeButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #c13a3a, stop:1 #a52a2a);
-                border: 1px solid #d4af37;
+                    stop:0 #e57373, stop:1 #ef5350);
+                border: 1px solid #e53935;
             }
             
-            /* Clear button - slate grey accent */
+            /* Clear button - grey accent */
             QPushButton#clearButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #6b7280, stop:1 #4b5563);
+                    stop:0 #78909c, stop:1 #607d8b);
             }
             
             QPushButton#clearButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #7b8290, stop:1 #6b7280);
-                border: 1px solid #d4af37;
+                    stop:0 #90a4ae, stop:1 #78909c);
+                border: 1px solid #546e7a;
             }
             
             /* Slider styling */
             QSlider::groove:horizontal {
-                border: 1px solid #c8b896;
+                border: 1px solid #e0e0e0;
                 height: 8px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #f5f1e8, stop:1 #e8dcc5);
+                background: #f5f5f5;
                 border-radius: 4px;
             }
             
             QSlider::handle:horizontal {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #d4af37, stop:1 #b8860b);
-                border: 2px solid #8b6914;
+                    stop:0 #5a9fd4, stop:1 #3498db);
+                border: 2px solid #2980b9;
                 width: 20px;
                 margin: -6px 0;
                 border-radius: 10px;
@@ -605,13 +601,13 @@ class DroneSimulationWindow(QMainWindow):
             
             QSlider::handle:horizontal:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e5c158, stop:1 #d4af37);
-                border: 2px solid #6b5410;
+                    stop:0 #6bb1e0, stop:1 #5a9fd4);
+                border: 2px solid #2471a3;
             }
             
             QSlider::sub-page:horizontal {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #d4af37, stop:1 #b8860b);
+                    stop:0 #5a9fd4, stop:1 #3498db);
                 border-radius: 4px;
             }
             
@@ -626,29 +622,29 @@ class DroneSimulationWindow(QMainWindow):
                 width: 20px;
                 height: 20px;
                 border-radius: 4px;
-                border: 2px solid #8b6914;
+                border: 2px solid #bdbdbd;
                 background: white;
             }
             
             QCheckBox::indicator:hover {
-                border: 2px solid #d4af37;
-                background: #fdfbf7;
+                border: 2px solid #3498db;
+                background: #f5f5f5;
             }
             
             QCheckBox::indicator:checked {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #d4af37, stop:1 #b8860b);
-                border: 2px solid #8b6914;
+                    stop:0 #5a9fd4, stop:1 #3498db);
+                border: 2px solid #2980b9;
             }
             
             QCheckBox::indicator:checked:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e5c158, stop:1 #d4af37);
+                    stop:0 #6bb1e0, stop:1 #5a9fd4);
             }
             
             /* List widget styling */
             QListWidget {
-                border: 2px solid #c8b896;
+                border: 1px solid #e0e0e0;
                 border-radius: 6px;
                 background: white;
                 padding: 4px;
@@ -665,13 +661,13 @@ class DroneSimulationWindow(QMainWindow):
             
             QListWidget::item:selected {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #2c5282, stop:1 #1e3a5f);
+                    stop:0 #5a9fd4, stop:1 #3498db);
                 color: white;
                 font-weight: 600;
             }
             
             QListWidget::item:hover {
-                background: #f5f1e8;
+                background: #f5f5f5;
             }
             
             /* Label styling */
@@ -682,8 +678,8 @@ class DroneSimulationWindow(QMainWindow):
             /* Status bar styling */
             QStatusBar {
                 background: #ffffff;
-                color: #4a4a4a;
-                border-top: 2px solid #c8b896;
+                color: #555555;
+                border-top: 1px solid #e0e0e0;
                 font-size: 9pt;
                 padding: 4px;
             }
@@ -692,43 +688,43 @@ class DroneSimulationWindow(QMainWindow):
     
     def setup_3d_scene(self):
         """Setup 3D visualization scene"""
-        # Grid with warm neutral tint
+        # Grid with light grey
         grid = gl.GLGridItem()
         grid.scale(2, 2, 1)
-        grid.setColor((140, 130, 115, 100))
+        grid.setColor((200, 200, 200, 120))
         self.plot_widget.addItem(grid)
         
-        # Trajectory line with elegant golden appearance
+        # Trajectory line with modern blue appearance
         self.trajectory_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.83, 0.69, 0.22, 0.9),  # Golden
+            color=(0.20, 0.60, 0.86, 0.9),  # Blue
             width=3.5,
             antialias=True
         )
         self.plot_widget.addItem(self.trajectory_line)
         
-        # Drone marker (elegant silver/platinum)
+        # Drone marker (bright blue)
         self.drone_marker = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 5]]),
-            color=(0.9, 0.9, 0.95, 1.0),
+            color=(0.20, 0.60, 0.86, 1.0),
             size=18,
             pxMode=True
         )
         self.plot_widget.addItem(self.drone_marker)
         
-        # Waypoint markers (rich amber/gold)
+        # Waypoint markers (teal/turquoise)
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.85, 0.65, 0.13, 1.0),  # Amber gold
+            color=(0.15, 0.65, 0.60, 1.0),  # Teal
             size=20,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
         
-        # User waypoint markers (bronze/copper)
+        # User waypoint markers (purple)
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.72, 0.45, 0.20, 1.0),  # Bronze
+            color=(0.67, 0.28, 0.73, 1.0),  # Purple
             size=22,
             pxMode=True
         )
