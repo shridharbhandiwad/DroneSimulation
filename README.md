@@ -178,15 +178,23 @@ make
 ./drone_trajectory_cpp
 ```
 
-**Windows:**
+**Windows (Easy Way - Use Build Script):**
+```batch
+cd cpp
+build_windows.bat
+```
+
+**Windows (Manual):**
 ```batch
 cd cpp
 mkdir build
 cd build
-cmake .. -G "Visual Studio 17 2022" -A x64
+cmake ..
 cmake --build . --config Release
 .\Release\drone_trajectory_cpp.exe
 ```
+
+**⚠️ Windows Note**: Don't use `make` on Windows! See [cpp/BUILD_INSTRUCTIONS_WINDOWS.md](cpp/BUILD_INSTRUCTIONS_WINDOWS.md) for details.
 
 ## Model Details
 
@@ -233,7 +241,11 @@ cmake --build . --config Release
 │   ├── drone_trajectory.h             # C++ header with waypoint management
 │   ├── drone_trajectory.cpp           # C++ implementation
 │   ├── main.cpp                       # C++ demo application
-│   └── CMakeLists.txt                 # Cross-platform CMake config
+│   ├── CMakeLists.txt                 # Cross-platform CMake config
+│   ├── build_windows.bat              # Windows build script (Batch)
+│   ├── build_windows.ps1              # Windows build script (PowerShell)
+│   ├── BUILD_INSTRUCTIONS_WINDOWS.md  # Windows build guide
+│   └── README.md                      # C++ component documentation
 ├── models/
 │   └── (trained models stored here)
 └── data/
