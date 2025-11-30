@@ -92,6 +92,8 @@ class TrajectoryGenerator:
         """
         self.dt = dt
         self.physics = DronePhysics()
+        self.waypoints = []  # Current waypoints
+        self.current_waypoint_idx = 0  # Current waypoint being targeted
         
     def generate(self, initial_position: np.ndarray, initial_velocity: np.ndarray,
                  waypoints: List[np.ndarray], max_time: float = 60.0) -> Dict:
@@ -176,3 +178,80 @@ class TrajectoryGenerator:
         noisy_traj['velocities'] = trajectory['velocities'] + vel_noise
         
         return noisy_traj
+    
+    def regenerate_from_current(self, current_position: np.ndarray, 
+                                current_velocity: np.ndarray,
+                                waypoints: List[np.ndarray],
+                                current_waypoint_idx: int = 0,
+                                max_time: float = 60.0) -> Dict:
+        """
+        Regenerate trajectory from current position with new or modified waypoints.
+        This allows dynamic path modification during flight.
+        
+        Args:
+            current_position: Current position [x, y, z]
+            current_velocity: Current velocity [vx, vy, vz]
+            waypoints: New list of waypoints to visit
+            current_waypoint_idx: Index of waypoint to target first (default: 0)
+            max_time: Maximum simulation time in seconds
+            
+        Returns:
+            Dict with trajectory data
+        """
+        # Filter out waypoints that are too close to current position
+        # or already passed
+        filtered_waypoints = []
+        for i, wp in enumerate(waypoints):
+            if i >= current_waypoint_idx:
+                filtered_waypoints.append(wp)
+        
+        # If no waypoints remain, use original list
+        if not filtered_waypoints:
+            filtered_waypoints = waypoints
+        
+        # Generate trajectory from current state
+        return self.generate(current_position, current_velocity, 
+                           filtered_waypoints, max_time)
+    
+    def add_waypoint_at_index(self, waypoint: np.ndarray, index: int = -1):
+        """
+        Add a waypoint at a specific index
+        
+        Args:
+            waypoint: New waypoint position [x, y, z]
+            index: Index to insert at (-1 for append)
+        """
+        if index == -1 or index >= len(self.waypoints):
+            self.waypoints.append(np.array(waypoint))
+        else:
+            self.waypoints.insert(index, np.array(waypoint))
+    
+    def remove_waypoint(self, index: int):
+        """
+        Remove a waypoint at a specific index
+        
+        Args:
+            index: Index of waypoint to remove
+        """
+        if 0 <= index < len(self.waypoints):
+            self.waypoints.pop(index)
+    
+    def modify_waypoint(self, index: int, new_position: np.ndarray):
+        """
+        Modify an existing waypoint
+        
+        Args:
+            index: Index of waypoint to modify
+            new_position: New position [x, y, z]
+        """
+        if 0 <= index < len(self.waypoints):
+            self.waypoints[index] = np.array(new_position)
+    
+    def get_waypoints(self) -> List[np.ndarray]:
+        """Get current waypoints"""
+        return self.waypoints.copy()
+    
+    def set_waypoints(self, waypoints: List[np.ndarray]):
+        """Set waypoints"""
+        self.waypoints = [np.array(wp) for wp in waypoints]
+        self.current_waypoint_idx = 0

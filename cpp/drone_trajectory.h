@@ -117,6 +117,76 @@ public:
      * Check if predictor is ready (has enough history)
      */
     bool isReady() const;
+    
+    // ========================================================================
+    // Dynamic Waypoint Management
+    // ========================================================================
+    
+    /**
+     * Set waypoints for trajectory following
+     * 
+     * @param waypoints Vector of waypoint positions
+     */
+    void setWaypoints(const std::vector<Vec3>& waypoints);
+    
+    /**
+     * Add a waypoint at the end of the list
+     * 
+     * @param waypoint Waypoint position to add
+     */
+    void addWaypoint(const Vec3& waypoint);
+    
+    /**
+     * Insert a waypoint at a specific index
+     * 
+     * @param waypoint Waypoint position to insert
+     * @param index Index to insert at
+     */
+    void insertWaypoint(const Vec3& waypoint, size_t index);
+    
+    /**
+     * Remove a waypoint at a specific index
+     * 
+     * @param index Index of waypoint to remove
+     * @return true if successful, false if index out of bounds
+     */
+    bool removeWaypoint(size_t index);
+    
+    /**
+     * Modify an existing waypoint
+     * 
+     * @param index Index of waypoint to modify
+     * @param new_position New position for the waypoint
+     * @return true if successful, false if index out of bounds
+     */
+    bool modifyWaypoint(size_t index, const Vec3& new_position);
+    
+    /**
+     * Clear all waypoints
+     */
+    void clearWaypoints();
+    
+    /**
+     * Get current waypoints
+     */
+    const std::vector<Vec3>& getWaypoints() const { return waypoints_; }
+    
+    /**
+     * Get current target waypoint index
+     */
+    size_t getCurrentWaypointIndex() const { return current_waypoint_idx_; }
+    
+    /**
+     * Set current waypoint index
+     */
+    void setCurrentWaypointIndex(size_t index);
+    
+    /**
+     * Get the current target waypoint
+     * 
+     * @return Current target waypoint, or zero vector if no waypoints
+     */
+    Vec3 getCurrentTargetWaypoint() const;
 
 private:
     // Model paths
@@ -143,6 +213,10 @@ private:
     
     // Normalization parameters
     NormalizationParams norm_params_;
+    
+    // Waypoint management
+    std::vector<Vec3> waypoints_;
+    size_t current_waypoint_idx_;
     
     // Helper functions
     std::vector<float> prepareInput(const Vec3& target_waypoint);
@@ -174,12 +248,31 @@ public:
                const Vec3& target_waypoint,
                float dt,
                DroneState& next_state);
+    
+    // ========================================================================
+    // Dynamic Waypoint Management (same as TrajectoryPredictor)
+    // ========================================================================
+    
+    void setWaypoints(const std::vector<Vec3>& waypoints);
+    void addWaypoint(const Vec3& waypoint);
+    void insertWaypoint(const Vec3& waypoint, size_t index);
+    bool removeWaypoint(size_t index);
+    bool modifyWaypoint(size_t index, const Vec3& new_position);
+    void clearWaypoints();
+    const std::vector<Vec3>& getWaypoints() const { return waypoints_; }
+    size_t getCurrentWaypointIndex() const { return current_waypoint_idx_; }
+    void setCurrentWaypointIndex(size_t index);
+    Vec3 getCurrentTargetWaypoint() const;
 
 private:
     float max_speed_;
     float max_acceleration_;
     float max_vertical_speed_;
     float drag_coefficient_;
+    
+    // Waypoint management
+    std::vector<Vec3> waypoints_;
+    size_t current_waypoint_idx_;
 };
 
 } // namespace drone
