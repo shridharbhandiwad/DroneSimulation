@@ -95,7 +95,8 @@ TrajectoryPredictor::TrajectoryPredictor(const std::string& model_path,
       normalization_path_(normalization_path),
       sequence_length_(sequence_length),
       input_size_(13),
-      output_size_(6) {
+      output_size_(6),
+      current_waypoint_idx_(0) {
 }
 
 TrajectoryPredictor::~TrajectoryPredictor() {
@@ -324,6 +325,69 @@ float TrajectoryPredictor::calculateDistance(const Vec3& a, const Vec3& b) const
 }
 
 // ============================================================================
+// Dynamic Waypoint Management - TrajectoryPredictor
+// ============================================================================
+
+void TrajectoryPredictor::setWaypoints(const std::vector<Vec3>& waypoints) {
+    waypoints_ = waypoints;
+    current_waypoint_idx_ = 0;
+}
+
+void TrajectoryPredictor::addWaypoint(const Vec3& waypoint) {
+    waypoints_.push_back(waypoint);
+}
+
+void TrajectoryPredictor::insertWaypoint(const Vec3& waypoint, size_t index) {
+    if (index >= waypoints_.size()) {
+        waypoints_.push_back(waypoint);
+    } else {
+        waypoints_.insert(waypoints_.begin() + index, waypoint);
+    }
+}
+
+bool TrajectoryPredictor::removeWaypoint(size_t index) {
+    if (index >= waypoints_.size()) {
+        return false;
+    }
+    waypoints_.erase(waypoints_.begin() + index);
+    
+    // Adjust current waypoint index if necessary
+    if (current_waypoint_idx_ >= waypoints_.size() && waypoints_.size() > 0) {
+        current_waypoint_idx_ = waypoints_.size() - 1;
+    } else if (waypoints_.empty()) {
+        current_waypoint_idx_ = 0;
+    }
+    
+    return true;
+}
+
+bool TrajectoryPredictor::modifyWaypoint(size_t index, const Vec3& new_position) {
+    if (index >= waypoints_.size()) {
+        return false;
+    }
+    waypoints_[index] = new_position;
+    return true;
+}
+
+void TrajectoryPredictor::clearWaypoints() {
+    waypoints_.clear();
+    current_waypoint_idx_ = 0;
+}
+
+void TrajectoryPredictor::setCurrentWaypointIndex(size_t index) {
+    if (index < waypoints_.size()) {
+        current_waypoint_idx_ = index;
+    }
+}
+
+Vec3 TrajectoryPredictor::getCurrentTargetWaypoint() const {
+    if (waypoints_.empty() || current_waypoint_idx_ >= waypoints_.size()) {
+        return Vec3(0, 0, 0);
+    }
+    return waypoints_[current_waypoint_idx_];
+}
+
+// ============================================================================
 // PhysicsTrajectoryGenerator Implementation
 // ============================================================================
 
@@ -333,7 +397,8 @@ PhysicsTrajectoryGenerator::PhysicsTrajectoryGenerator(float max_speed,
     : max_speed_(max_speed),
       max_acceleration_(max_acceleration),
       max_vertical_speed_(max_vertical_speed),
-      drag_coefficient_(0.1f) {
+      drag_coefficient_(0.1f),
+      current_waypoint_idx_(0) {
 }
 
 void PhysicsTrajectoryGenerator::update(const DroneState& current_state,
@@ -388,6 +453,69 @@ void PhysicsTrajectoryGenerator::update(const DroneState& current_state,
     next_state.velocity = new_velocity;
     next_state.acceleration = acceleration;
     next_state.timestamp = current_state.timestamp + dt;
+}
+
+// ============================================================================
+// Dynamic Waypoint Management - PhysicsTrajectoryGenerator
+// ============================================================================
+
+void PhysicsTrajectoryGenerator::setWaypoints(const std::vector<Vec3>& waypoints) {
+    waypoints_ = waypoints;
+    current_waypoint_idx_ = 0;
+}
+
+void PhysicsTrajectoryGenerator::addWaypoint(const Vec3& waypoint) {
+    waypoints_.push_back(waypoint);
+}
+
+void PhysicsTrajectoryGenerator::insertWaypoint(const Vec3& waypoint, size_t index) {
+    if (index >= waypoints_.size()) {
+        waypoints_.push_back(waypoint);
+    } else {
+        waypoints_.insert(waypoints_.begin() + index, waypoint);
+    }
+}
+
+bool PhysicsTrajectoryGenerator::removeWaypoint(size_t index) {
+    if (index >= waypoints_.size()) {
+        return false;
+    }
+    waypoints_.erase(waypoints_.begin() + index);
+    
+    // Adjust current waypoint index if necessary
+    if (current_waypoint_idx_ >= waypoints_.size() && waypoints_.size() > 0) {
+        current_waypoint_idx_ = waypoints_.size() - 1;
+    } else if (waypoints_.empty()) {
+        current_waypoint_idx_ = 0;
+    }
+    
+    return true;
+}
+
+bool PhysicsTrajectoryGenerator::modifyWaypoint(size_t index, const Vec3& new_position) {
+    if (index >= waypoints_.size()) {
+        return false;
+    }
+    waypoints_[index] = new_position;
+    return true;
+}
+
+void PhysicsTrajectoryGenerator::clearWaypoints() {
+    waypoints_.clear();
+    current_waypoint_idx_ = 0;
+}
+
+void PhysicsTrajectoryGenerator::setCurrentWaypointIndex(size_t index) {
+    if (index < waypoints_.size()) {
+        current_waypoint_idx_ = index;
+    }
+}
+
+Vec3 PhysicsTrajectoryGenerator::getCurrentTargetWaypoint() const {
+    if (waypoints_.empty() || current_waypoint_idx_ >= waypoints_.size()) {
+        return Vec3(0, 0, 0);
+    }
+    return waypoints_[current_waypoint_idx_];
 }
 
 } // namespace drone

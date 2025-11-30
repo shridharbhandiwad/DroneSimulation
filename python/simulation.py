@@ -129,6 +129,7 @@ class DroneSimulationWindow(QMainWindow):
         self.user_waypoints = []
         self.click_mode_enabled = False
         self.click_height = 10.0  # Default height for clicked waypoints
+        self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
         
         # Setup UI
         self.setup_ui()
@@ -264,13 +265,33 @@ class DroneSimulationWindow(QMainWindow):
         self.clear_wp_btn.clicked.connect(self.clear_waypoints)
         wp_btn_layout.addWidget(self.clear_wp_btn)
         
+        waypoint_layout.addLayout(wp_btn_layout)
+        
+        # Generate/Apply buttons layout
+        gen_btn_layout = QVBoxLayout()
+        
         self.generate_traj_btn = QPushButton("✨ Generate Trajectory")
         self.generate_traj_btn.clicked.connect(self.generate_from_waypoints)
         self.generate_traj_btn.setObjectName("generateButton")
         self.generate_traj_btn.setMinimumHeight(35)
-        wp_btn_layout.addWidget(self.generate_traj_btn)
+        gen_btn_layout.addWidget(self.generate_traj_btn)
         
-        waypoint_layout.addLayout(wp_btn_layout)
+        # Dynamic waypoint mode toggle
+        self.dynamic_mode_checkbox = QCheckBox("🔄 Enable Dynamic Waypoint Mode")
+        self.dynamic_mode_checkbox.setFont(QFont("Arial", 9, QFont.Bold))
+        self.dynamic_mode_checkbox.setStyleSheet("color: #e74c3c; margin-top: 5px;")
+        self.dynamic_mode_checkbox.stateChanged.connect(self.toggle_dynamic_mode)
+        gen_btn_layout.addWidget(self.dynamic_mode_checkbox)
+        
+        # Apply changes during flight button
+        self.apply_changes_btn = QPushButton("⚡ Apply Waypoint Changes")
+        self.apply_changes_btn.clicked.connect(self.apply_waypoint_changes)
+        self.apply_changes_btn.setObjectName("applyButton")
+        self.apply_changes_btn.setMinimumHeight(35)
+        self.apply_changes_btn.setEnabled(False)
+        gen_btn_layout.addWidget(self.apply_changes_btn)
+        
+        waypoint_layout.addLayout(gen_btn_layout)
         waypoint_group.setLayout(waypoint_layout)
         middle_panel.addWidget(waypoint_group)
         
@@ -414,6 +435,18 @@ class DroneSimulationWindow(QMainWindow):
             
             QPushButton#generateButton:hover {
                 background-color: #138d75;
+            }
+            
+            QPushButton#applyButton {
+                background-color: #e74c3c;
+            }
+            
+            QPushButton#applyButton:hover {
+                background-color: #c0392b;
+            }
+            
+            QPushButton#applyButton:disabled {
+                background-color: #95a5a6;
             }
             
             QSlider::groove:horizontal {
@@ -586,7 +619,13 @@ class DroneSimulationWindow(QMainWindow):
         # Update visualization
         self.update_user_waypoint_markers()
         
-        self.statusBar().showMessage(f"Added waypoint at ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f})", 2000)
+        message = f"Added waypoint at ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f})"
+        
+        # If in dynamic mode and trajectory is running, prompt to apply changes
+        if self.dynamic_mode_enabled and self.current_trajectory is not None:
+            message += " - Click 'Apply Waypoint Changes' to update trajectory"
+        
+        self.statusBar().showMessage(message, 3000)
     
     def remove_selected_waypoint(self):
         """Remove the selected waypoint from the list"""
@@ -626,6 +665,87 @@ class DroneSimulationWindow(QMainWindow):
         else:
             # Hide markers by placing them off-screen
             self.user_waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
+    
+    def toggle_dynamic_mode(self, state):
+        """Toggle dynamic waypoint modification mode"""
+        self.dynamic_mode_enabled = (state == Qt.Checked)
+        
+        if self.dynamic_mode_enabled:
+            self.apply_changes_btn.setEnabled(True)
+            self.statusBar().showMessage("Dynamic waypoint mode enabled - You can now modify waypoints during flight!", 3000)
+        else:
+            self.apply_changes_btn.setEnabled(False)
+            self.statusBar().showMessage("Dynamic waypoint mode disabled", 2000)
+    
+    def apply_waypoint_changes(self):
+        """Apply waypoint changes during flight - regenerate trajectory from current position"""
+        if not self.dynamic_mode_enabled:
+            QMessageBox.warning(self, "Dynamic Mode Disabled",
+                              "Please enable Dynamic Waypoint Mode first.")
+            return
+        
+        if self.current_trajectory is None:
+            QMessageBox.warning(self, "No Active Trajectory",
+                              "Please generate a trajectory first.")
+            return
+        
+        if len(self.user_waypoints) < 1:
+            QMessageBox.warning(self, "No Waypoints",
+                              "Please add at least one waypoint.")
+            return
+        
+        # Get current state
+        positions = self.current_trajectory['positions']
+        velocities = self.current_trajectory['velocities']
+        waypoints = self.current_trajectory['waypoints']
+        wp_indices = self.current_trajectory['waypoint_indices']
+        
+        current_pos = positions[self.current_step]
+        current_vel = velocities[self.current_step]
+        current_wp_idx = wp_indices[self.current_step]
+        
+        # Regenerate trajectory from current position with new waypoints
+        new_trajectory = self.trajectory_generator.regenerate_from_current(
+            current_pos, current_vel, self.user_waypoints.copy(),
+            current_waypoint_idx=0  # Start from first waypoint in new list
+        )
+        
+        # Combine old trajectory (up to current point) with new trajectory
+        self.current_trajectory['positions'] = np.vstack([
+            positions[:self.current_step + 1],
+            new_trajectory['positions'][1:]  # Skip first point to avoid duplicate
+        ])
+        self.current_trajectory['velocities'] = np.vstack([
+            velocities[:self.current_step + 1],
+            new_trajectory['velocities'][1:]
+        ])
+        self.current_trajectory['accelerations'] = np.vstack([
+            self.current_trajectory['accelerations'][:self.current_step + 1],
+            new_trajectory['accelerations'][1:]
+        ])
+        self.current_trajectory['times'] = np.concatenate([
+            self.current_trajectory['times'][:self.current_step + 1],
+            new_trajectory['times'][1:] + self.current_trajectory['times'][self.current_step]
+        ])
+        
+        # Update waypoint indices
+        old_wp_indices = np.full(self.current_step + 1, current_wp_idx)
+        new_wp_indices = new_trajectory['waypoint_indices'][1:]
+        self.current_trajectory['waypoint_indices'] = np.concatenate([
+            old_wp_indices,
+            new_wp_indices
+        ])
+        
+        # Update waypoints
+        self.current_trajectory['waypoints'] = np.array(self.user_waypoints)
+        
+        # Update visualization
+        self.update_3d_scene()
+        
+        self.statusBar().showMessage(
+            f"✓ Trajectory updated with {len(self.user_waypoints)} waypoints from current position!", 
+            4000
+        )
     
     def generate_from_waypoints(self):
         """Generate trajectory from user-defined waypoints"""
