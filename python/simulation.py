@@ -127,11 +127,13 @@ class DroneSimulationWindow(QMainWindow):
         self.playback_speed = 1.0
         
         # Waypoint management
-        self.user_waypoints = []
+        self.user_waypoints = []  # List of dicts: [{'position': [x,y,z], 'speed': float}, ...]
         self.click_mode_enabled = False
         self.click_height = 10.0  # Default height for clicked waypoints
+        self.click_speed = 10.0  # Default speed for clicked waypoints (m/s)
         self.dynamic_mode_enabled = False  # Allow waypoint changes during flight
         self.visited_waypoints = set()  # Track visited waypoints
+        self.auto_play_enabled = True  # Auto-play when waypoints are added
         
         # Visual options - all disabled by default
         self.show_trail = False
@@ -270,16 +272,16 @@ class DroneSimulationWindow(QMainWindow):
         speed_label.setObjectName("controlLabel")
         control_layout.addWidget(speed_label, 1, 0)
         
-        self.speed_slider = QSlider(Qt.Horizontal)
-        self.speed_slider.setMinimum(1)
-        self.speed_slider.setMaximum(50)
-        self.speed_slider.setValue(10)
-        self.speed_slider.valueChanged.connect(self.update_speed)
-        control_layout.addWidget(self.speed_slider, 1, 1)
+        self.playback_speed_slider = QSlider(Qt.Horizontal)
+        self.playback_speed_slider.setMinimum(1)
+        self.playback_speed_slider.setMaximum(50)
+        self.playback_speed_slider.setValue(10)
+        self.playback_speed_slider.valueChanged.connect(self.update_speed)
+        control_layout.addWidget(self.playback_speed_slider, 1, 1)
         
-        self.speed_label = QLabel("1.0x")
-        self.speed_label.setObjectName("valueLabel")
-        control_layout.addWidget(self.speed_label, 1, 2)
+        self.playback_speed_label = QLabel("1.0x")
+        self.playback_speed_label.setObjectName("valueLabel")
+        control_layout.addWidget(self.playback_speed_label, 1, 2)
         
         control_group.setLayout(control_layout)
         left_panel.addWidget(control_group)
@@ -414,6 +416,26 @@ class DroneSimulationWindow(QMainWindow):
         height_layout.addLayout(height_control)
         waypoint_layout.addLayout(height_layout)
         
+        # Speed control for clicked waypoints
+        speed_layout = QVBoxLayout()
+        speed_layout.setSpacing(4)
+        speed_lbl = QLabel("Waypoint Speed:")
+        speed_lbl.setObjectName("controlLabel")
+        speed_layout.addWidget(speed_lbl)
+        
+        speed_control = QHBoxLayout()
+        self.waypoint_speed_slider = QSlider(Qt.Horizontal)
+        self.waypoint_speed_slider.setMinimum(1)
+        self.waypoint_speed_slider.setMaximum(15)
+        self.waypoint_speed_slider.setValue(10)
+        self.waypoint_speed_slider.valueChanged.connect(self.update_click_speed)
+        speed_control.addWidget(self.waypoint_speed_slider)
+        self.waypoint_speed_label = QLabel("10 m/s")
+        self.waypoint_speed_label.setObjectName("valueLabel")
+        speed_control.addWidget(self.waypoint_speed_label)
+        speed_layout.addLayout(speed_control)
+        waypoint_layout.addLayout(speed_layout)
+        
         # Waypoint list
         list_label = QLabel("Active Waypoints:")
         list_label.setObjectName("controlLabel")
@@ -453,6 +475,14 @@ class DroneSimulationWindow(QMainWindow):
         self.generate_traj_btn.setMinimumHeight(38)
         gen_btn_layout.addWidget(self.generate_traj_btn)
         
+        # Auto-play mode toggle
+        self.auto_play_checkbox = QCheckBox("Auto-Play on Generate")
+        self.auto_play_checkbox.setFont(QFont("Arial", 9))
+        self.auto_play_checkbox.setChecked(True)
+        self.auto_play_checkbox.setStyleSheet("margin-top: 4px;")
+        self.auto_play_checkbox.stateChanged.connect(self.toggle_auto_play)
+        gen_btn_layout.addWidget(self.auto_play_checkbox)
+        
         # Dynamic waypoint mode toggle
         self.dynamic_mode_checkbox = QCheckBox("Enable Dynamic Mode")
         self.dynamic_mode_checkbox.setFont(QFont("Arial", 9))
@@ -485,6 +515,7 @@ class DroneSimulationWindow(QMainWindow):
             ("Velocity", "velocity"),
             ("Acceleration", "acceleration"),
             ("Current WP", "waypoint"),
+            ("Target Speed", "target_speed"),
             ("Time", "time"),
             ("Progress", "progress")
         ]
@@ -1631,22 +1662,34 @@ class DroneSimulationWindow(QMainWindow):
         self.click_height = float(value)
         self.height_label.setText(f"{value}m")
     
-    def add_waypoint(self, position):
+    def update_click_speed(self, value):
+        """Update the speed for clicked waypoints"""
+        self.click_speed = float(value)
+        self.waypoint_speed_label.setText(f"{value} m/s")
+    
+    def add_waypoint(self, position, speed=None):
         """Add a waypoint to the list"""
-        self.user_waypoints.append(position)
+        if speed is None:
+            speed = self.click_speed
+        
+        waypoint = {
+            'position': position,
+            'speed': speed
+        }
+        self.user_waypoints.append(waypoint)
         
         # Update the list widget
-        item_text = f"WP {len(self.user_waypoints)}: ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f})"
+        item_text = f"WP {len(self.user_waypoints)}: ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f}) @ {speed:.1f} m/s"
         self.waypoint_list.addItem(item_text)
         
         # Update visualization
         self.update_user_waypoint_markers()
         
-        message = f"Added waypoint at ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f})"
+        message = f"Added waypoint at ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f}) with speed {speed:.1f} m/s"
         
         # If in dynamic mode and trajectory is running, prompt to apply changes
         if self.dynamic_mode_enabled and self.current_trajectory is not None:
-            message += " - Click 'Apply Waypoint Changes' to update trajectory"
+            message += " - Click 'Apply Changes' to update trajectory"
         
         self.statusBar().showMessage(message, 3000)
     
@@ -1659,9 +1702,11 @@ class DroneSimulationWindow(QMainWindow):
             
             # Update list numbering
             for i in range(self.waypoint_list.count()):
-                pos = self.user_waypoints[i]
+                wp = self.user_waypoints[i]
+                pos = wp['position']
+                speed = wp['speed']
                 self.waypoint_list.item(i).setText(
-                    f"WP {i+1}: ({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})"
+                    f"WP {i+1}: ({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f}) @ {speed:.1f} m/s"
                 )
             
             self.update_user_waypoint_markers()
@@ -1683,13 +1728,22 @@ class DroneSimulationWindow(QMainWindow):
     def update_user_waypoint_markers(self):
         """Update the visual markers for user waypoints"""
         if self.user_waypoints:
-            positions = np.array(self.user_waypoints)
+            positions = np.array([wp['position'] for wp in self.user_waypoints])
             self.user_waypoint_markers.setData(pos=positions)
             self.user_waypoint_markers_glow.setData(pos=positions)
         else:
             # Hide markers by placing them off-screen
             self.user_waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
             self.user_waypoint_markers_glow.setData(pos=np.array([[1000, 1000, 1000]]))
+    
+    def toggle_auto_play(self, state):
+        """Toggle auto-play mode"""
+        self.auto_play_enabled = (state == Qt.Checked)
+        
+        if self.auto_play_enabled:
+            self.statusBar().showMessage("Auto-play enabled - Trajectory will start automatically", 2000)
+        else:
+            self.statusBar().showMessage("Auto-play disabled - Click Play to start", 2000)
     
     def toggle_dynamic_mode(self, state):
         """Toggle dynamic waypoint modification mode"""
@@ -1761,14 +1815,19 @@ class DroneSimulationWindow(QMainWindow):
             new_wp_indices
         ])
         
-        # Update waypoints
-        self.current_trajectory['waypoints'] = np.array(self.user_waypoints)
+        # Update waypoints and speeds
+        self.current_trajectory['waypoints'] = new_trajectory['waypoints']
+        self.current_trajectory['waypoint_speeds'] = new_trajectory['waypoint_speeds']
         
         # Reset visited waypoints since we have a new set of waypoints
         self.visited_waypoints.clear()
         
         # Update visualization
         self.update_3d_scene()
+        
+        # Resume playing if it was already playing
+        if not self.is_playing and self.auto_play_enabled:
+            self.toggle_play()
         
         self.statusBar().showMessage(
             f"Trajectory updated with {len(self.user_waypoints)} waypoints from current position!", 
@@ -1798,6 +1857,10 @@ class DroneSimulationWindow(QMainWindow):
         self.update_3d_scene()
         self.reset_simulation()
         
+        # Auto-play if enabled
+        if self.auto_play_enabled and not self.is_playing:
+            self.toggle_play()
+        
         self.statusBar().showMessage(f"Generated trajectory with {len(self.user_waypoints)} waypoints", 3000)
     
     def generate_new_trajectory(self):
@@ -1806,16 +1869,17 @@ class DroneSimulationWindow(QMainWindow):
         initial_pos = np.array([0, 0, 5])
         initial_vel = np.array([0, 0, 0])
         
-        # Random waypoints
+        # Random waypoints with speeds
         num_waypoints = np.random.randint(3, 6)
         waypoints = []
         for _ in range(num_waypoints):
-            wp = np.array([
+            pos = np.array([
                 np.random.uniform(-30, 30),
                 np.random.uniform(-30, 30),
                 np.random.uniform(5, 20)
             ])
-            waypoints.append(wp)
+            speed = np.random.uniform(5, 12)  # Random speed between 5-12 m/s
+            waypoints.append({'position': pos, 'speed': speed})
         
         # Generate trajectory
         self.current_trajectory = self.trajectory_generator.generate(
@@ -1828,6 +1892,10 @@ class DroneSimulationWindow(QMainWindow):
         # Update visualization
         self.update_3d_scene()
         self.reset_simulation()
+        
+        # Auto-play if enabled
+        if self.auto_play_enabled and not self.is_playing:
+            self.toggle_play()
         
         self.statusBar().showMessage(f"Generated random trajectory with {num_waypoints} waypoints", 2000)
     
@@ -1995,7 +2063,7 @@ class DroneSimulationWindow(QMainWindow):
     def update_speed(self, value):
         """Update playback speed"""
         self.playback_speed = value / 10.0
-        self.speed_label.setText(f"{self.playback_speed:.1f}x")
+        self.playback_speed_label.setText(f"{self.playback_speed:.1f}x")
         
         if self.is_playing:
             self.timer.setInterval(int(100 / self.playback_speed))
@@ -2079,6 +2147,13 @@ class DroneSimulationWindow(QMainWindow):
         distance_to_wp = np.linalg.norm(current_wp - pos)
         speed = np.linalg.norm(vel)
         
+        # Get target speed for current waypoint
+        waypoint_speeds = self.current_trajectory.get('waypoint_speeds', None)
+        if waypoint_speeds is not None and wp_idx < len(waypoint_speeds):
+            target_speed = waypoint_speeds[wp_idx]
+        else:
+            target_speed = 10.0  # Default
+        
         # Update info labels
         self.info_labels['position'].setText(
             f"({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f})"
@@ -2092,6 +2167,7 @@ class DroneSimulationWindow(QMainWindow):
         self.info_labels['waypoint'].setText(
             f"#{wp_idx+1} | Dist: {distance_to_wp:.1f}m"
         )
+        self.info_labels['target_speed'].setText(f"{target_speed:.1f} m/s")
         self.info_labels['time'].setText(f"{time:.1f}s")
         self.info_labels['progress'].setText(
             f"{self.current_step}/{len(positions)-1} "
