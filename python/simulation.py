@@ -147,23 +147,24 @@ class DroneSimulationWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setSpacing(15)
-        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(5)
+        main_layout.setContentsMargins(5, 5, 5, 5)
         
         # Left panel - 3D visualization and controls
         left_panel = QVBoxLayout()
-        left_panel.setSpacing(10)
+        left_panel.setSpacing(5)
         
         # Title for 3D view
-        view_title = QLabel("🚁 3D Trajectory View")
-        view_title.setFont(QFont("Arial", 14, QFont.Bold))
-        view_title.setStyleSheet("color: #2c3e50; padding: 5px;")
+        view_title = QLabel("3D Trajectory View")
+        view_title.setFont(QFont("Arial", 11, QFont.Bold))
+        view_title.setStyleSheet("color: #333333; padding: 2px;")
         left_panel.addWidget(view_title)
         
         # 3D plot
         self.plot_widget = gl.GLViewWidget()
         self.plot_widget.setMinimumSize(800, 550)
         self.plot_widget.setCameraPosition(distance=100)
+        self.plot_widget.setBackgroundColor('#c0c0c0')
         self.plot_widget.setObjectName("plot3d")
         left_panel.addWidget(self.plot_widget)
         
@@ -171,31 +172,32 @@ class DroneSimulationWindow(QMainWindow):
         self.setup_3d_scene()
         
         # Playback controls group
-        control_group = QGroupBox("⚙️ Simulation Controls")
-        control_group.setFont(QFont("Arial", 10, QFont.Bold))
+        control_group = QGroupBox("Simulation Controls")
+        control_group.setFont(QFont("Arial", 9, QFont.Bold))
         control_layout = QGridLayout()
-        control_layout.setSpacing(10)
+        control_layout.setSpacing(4)
+        control_layout.setContentsMargins(5, 8, 5, 5)
         
-        self.play_btn = QPushButton("▶️ Play")
+        self.play_btn = QPushButton("Play")
         self.play_btn.clicked.connect(self.toggle_play)
-        self.play_btn.setMinimumHeight(40)
+        self.play_btn.setMinimumHeight(28)
         self.play_btn.setObjectName("playButton")
         control_layout.addWidget(self.play_btn, 0, 0)
         
-        self.reset_btn = QPushButton("🔄 Reset")
+        self.reset_btn = QPushButton("Reset")
         self.reset_btn.clicked.connect(self.reset_simulation)
-        self.reset_btn.setMinimumHeight(40)
+        self.reset_btn.setMinimumHeight(28)
         self.reset_btn.setObjectName("resetButton")
         control_layout.addWidget(self.reset_btn, 0, 1)
         
-        self.new_traj_btn = QPushButton("🎲 Random Trajectory")
+        self.new_traj_btn = QPushButton("Random")
         self.new_traj_btn.clicked.connect(self.generate_new_trajectory)
-        self.new_traj_btn.setMinimumHeight(40)
+        self.new_traj_btn.setMinimumHeight(28)
         self.new_traj_btn.setObjectName("newTrajButton")
         control_layout.addWidget(self.new_traj_btn, 0, 2)
         
         speed_label = QLabel("Speed:")
-        speed_label.setStyleSheet("font-weight: bold;")
+        speed_label.setStyleSheet("font-weight: bold; font-size: 9px;")
         control_layout.addWidget(speed_label, 1, 0)
         
         self.speed_slider = QSlider(Qt.Horizontal)
@@ -206,7 +208,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.speed_slider, 1, 1)
         
         self.speed_label = QLabel("1.0x")
-        self.speed_label.setStyleSheet("font-weight: bold; color: #27ae60;")
+        self.speed_label.setStyleSheet("font-weight: bold; font-size: 9px;")
         control_layout.addWidget(self.speed_label, 1, 2)
         
         control_group.setLayout(control_layout)
@@ -214,25 +216,28 @@ class DroneSimulationWindow(QMainWindow):
         
         # Middle panel - Waypoint management
         middle_panel = QVBoxLayout()
-        middle_panel.setSpacing(10)
+        middle_panel.setSpacing(5)
         
         # Waypoint controls
-        waypoint_group = QGroupBox("📍 Waypoint Manager")
-        waypoint_group.setFont(QFont("Arial", 10, QFont.Bold))
+        waypoint_group = QGroupBox("Waypoint Manager")
+        waypoint_group.setFont(QFont("Arial", 9, QFont.Bold))
         waypoint_layout = QVBoxLayout()
-        waypoint_layout.setSpacing(10)
+        waypoint_layout.setSpacing(4)
+        waypoint_layout.setContentsMargins(5, 8, 5, 5)
         
         # Click mode toggle
         click_mode_layout = QHBoxLayout()
-        self.click_mode_checkbox = QCheckBox("Click to Add Waypoints")
-        self.click_mode_checkbox.setFont(QFont("Arial", 9, QFont.Bold))
+        self.click_mode_checkbox = QCheckBox("Click to Add")
+        self.click_mode_checkbox.setFont(QFont("Arial", 8))
         self.click_mode_checkbox.stateChanged.connect(self.toggle_click_mode)
         click_mode_layout.addWidget(self.click_mode_checkbox)
         waypoint_layout.addLayout(click_mode_layout)
         
         # Height control for clicked waypoints
         height_layout = QHBoxLayout()
-        height_layout.addWidget(QLabel("Click Height (m):"))
+        height_lbl = QLabel("Height:")
+        height_lbl.setStyleSheet("font-size: 8px;")
+        height_layout.addWidget(height_lbl)
         self.height_slider = QSlider(Qt.Horizontal)
         self.height_slider.setMinimum(5)
         self.height_slider.setMaximum(30)
@@ -240,54 +245,57 @@ class DroneSimulationWindow(QMainWindow):
         self.height_slider.valueChanged.connect(self.update_click_height)
         height_layout.addWidget(self.height_slider)
         self.height_label = QLabel("10m")
-        self.height_label.setStyleSheet("font-weight: bold; color: #2980b9;")
+        self.height_label.setStyleSheet("font-weight: bold; font-size: 8px;")
         height_layout.addWidget(self.height_label)
         waypoint_layout.addLayout(height_layout)
         
         # Waypoint list
         list_label = QLabel("Waypoints:")
-        list_label.setStyleSheet("font-weight: bold; margin-top: 10px;")
+        list_label.setStyleSheet("font-weight: bold; font-size: 8px; margin-top: 4px;")
         waypoint_layout.addWidget(list_label)
         
         self.waypoint_list = QListWidget()
-        self.waypoint_list.setMaximumHeight(200)
+        self.waypoint_list.setMaximumHeight(150)
         self.waypoint_list.setObjectName("waypointList")
         waypoint_layout.addWidget(self.waypoint_list)
         
         # Waypoint action buttons
         wp_btn_layout = QHBoxLayout()
         
-        self.remove_wp_btn = QPushButton("➖ Remove")
+        self.remove_wp_btn = QPushButton("Remove")
         self.remove_wp_btn.clicked.connect(self.remove_selected_waypoint)
+        self.remove_wp_btn.setMinimumHeight(24)
         wp_btn_layout.addWidget(self.remove_wp_btn)
         
-        self.clear_wp_btn = QPushButton("🗑️ Clear All")
+        self.clear_wp_btn = QPushButton("Clear")
         self.clear_wp_btn.clicked.connect(self.clear_waypoints)
+        self.clear_wp_btn.setMinimumHeight(24)
         wp_btn_layout.addWidget(self.clear_wp_btn)
         
         waypoint_layout.addLayout(wp_btn_layout)
         
         # Generate/Apply buttons layout
         gen_btn_layout = QVBoxLayout()
+        gen_btn_layout.setSpacing(3)
         
-        self.generate_traj_btn = QPushButton("✨ Generate Trajectory")
+        self.generate_traj_btn = QPushButton("Generate Trajectory")
         self.generate_traj_btn.clicked.connect(self.generate_from_waypoints)
         self.generate_traj_btn.setObjectName("generateButton")
-        self.generate_traj_btn.setMinimumHeight(35)
+        self.generate_traj_btn.setMinimumHeight(26)
         gen_btn_layout.addWidget(self.generate_traj_btn)
         
         # Dynamic waypoint mode toggle
-        self.dynamic_mode_checkbox = QCheckBox("🔄 Enable Dynamic Waypoint Mode")
-        self.dynamic_mode_checkbox.setFont(QFont("Arial", 9, QFont.Bold))
-        self.dynamic_mode_checkbox.setStyleSheet("color: #e74c3c; margin-top: 5px;")
+        self.dynamic_mode_checkbox = QCheckBox("Enable Dynamic Mode")
+        self.dynamic_mode_checkbox.setFont(QFont("Arial", 8))
+        self.dynamic_mode_checkbox.setStyleSheet("margin-top: 2px;")
         self.dynamic_mode_checkbox.stateChanged.connect(self.toggle_dynamic_mode)
         gen_btn_layout.addWidget(self.dynamic_mode_checkbox)
         
         # Apply changes during flight button
-        self.apply_changes_btn = QPushButton("⚡ Apply Waypoint Changes")
+        self.apply_changes_btn = QPushButton("Apply Changes")
         self.apply_changes_btn.clicked.connect(self.apply_waypoint_changes)
         self.apply_changes_btn.setObjectName("applyButton")
-        self.apply_changes_btn.setMinimumHeight(35)
+        self.apply_changes_btn.setMinimumHeight(26)
         self.apply_changes_btn.setEnabled(False)
         gen_btn_layout.addWidget(self.apply_changes_btn)
         
@@ -296,10 +304,11 @@ class DroneSimulationWindow(QMainWindow):
         middle_panel.addWidget(waypoint_group)
         
         # Info panel
-        info_group = QGroupBox("📊 Telemetry")
-        info_group.setFont(QFont("Arial", 10, QFont.Bold))
+        info_group = QGroupBox("Telemetry")
+        info_group.setFont(QFont("Arial", 9, QFont.Bold))
         info_layout = QGridLayout()
-        info_layout.setSpacing(8)
+        info_layout.setSpacing(3)
+        info_layout.setContentsMargins(5, 8, 5, 5)
         
         self.info_labels = {}
         info_items = [
@@ -313,10 +322,10 @@ class DroneSimulationWindow(QMainWindow):
         
         for i, (label, key) in enumerate(info_items):
             label_widget = QLabel(f"{label}:")
-            label_widget.setStyleSheet("font-weight: bold; color: #34495e;")
+            label_widget.setStyleSheet("font-weight: bold; font-size: 8px;")
             info_layout.addWidget(label_widget, i, 0)
             value_label = QLabel("N/A")
-            value_label.setStyleSheet("color: #16a085;")
+            value_label.setStyleSheet("font-size: 8px;")
             self.info_labels[key] = value_label
             info_layout.addWidget(value_label, i, 1)
         
@@ -324,41 +333,36 @@ class DroneSimulationWindow(QMainWindow):
         middle_panel.addWidget(info_group)
         
         # ML status
-        ml_group = QGroupBox("🤖 AI Status")
-        ml_group.setFont(QFont("Arial", 10, QFont.Bold))
+        ml_group = QGroupBox("AI Status")
+        ml_group.setFont(QFont("Arial", 9, QFont.Bold))
         ml_layout = QVBoxLayout()
-        ml_status = QLabel(f"{'✓ ML Model Active' if self.use_ml else '⚠ Physics Mode Only'}")
-        ml_status.setStyleSheet(
-            "color: #27ae60; font-size: 11px; padding: 5px;" if self.use_ml 
-            else "color: #f39c12; font-size: 11px; padding: 5px;"
-        )
+        ml_layout.setContentsMargins(5, 8, 5, 5)
+        ml_status = QLabel(f"{'ML Model Active' if self.use_ml else 'Physics Mode'}")
+        ml_status.setStyleSheet("font-size: 8px; padding: 2px;")
         ml_layout.addWidget(ml_status)
         ml_group.setLayout(ml_layout)
         middle_panel.addWidget(ml_group)
         
-        middle_panel.addStretch()
-        
         # Right panel - Camera feed
         right_panel = QVBoxLayout()
-        right_panel.setSpacing(10)
+        right_panel.setSpacing(5)
         
-        camera_title = QLabel("📹 FPV Camera")
-        camera_title.setFont(QFont("Arial", 14, QFont.Bold))
-        camera_title.setStyleSheet("color: #2c3e50; padding: 5px;")
+        camera_title = QLabel("FPV Camera")
+        camera_title.setFont(QFont("Arial", 11, QFont.Bold))
+        camera_title.setStyleSheet("color: #333333; padding: 2px;")
         right_panel.addWidget(camera_title)
         
         camera_group = QGroupBox()
         camera_group.setObjectName("cameraGroup")
         camera_layout = QVBoxLayout()
+        camera_layout.setContentsMargins(5, 5, 5, 5)
         self.camera_label = QLabel()
         self.camera_label.setMinimumSize(640, 480)
         self.camera_label.setScaledContents(True)
-        self.camera_label.setStyleSheet("border: 2px solid #34495e; border-radius: 5px;")
+        self.camera_label.setStyleSheet("border: 1px solid #555555;")
         camera_layout.addWidget(self.camera_label)
         camera_group.setLayout(camera_layout)
         right_panel.addWidget(camera_group)
-        
-        right_panel.addStretch()
         
         # Add panels to main layout
         main_layout.addLayout(left_panel, 3)
@@ -366,192 +370,193 @@ class DroneSimulationWindow(QMainWindow):
         main_layout.addLayout(right_panel, 2)
     
     def apply_stylesheet(self):
-        """Apply modern stylesheet to the application"""
+        """Apply monochrome stylesheet to the application"""
         stylesheet = """
             QMainWindow {
-                background-color: #ecf0f1;
+                background-color: #d0d0d0;
             }
             
             QGroupBox {
-                border: 2px solid #bdc3c7;
-                border-radius: 8px;
-                margin-top: 10px;
-                padding: 15px;
-                background-color: #ffffff;
+                border: 1px solid #666666;
+                border-radius: 3px;
+                margin-top: 6px;
+                padding: 6px;
+                background-color: #e8e8e8;
             }
             
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-                color: #2c3e50;
+                left: 8px;
+                padding: 0 3px;
+                color: #222222;
             }
             
             QPushButton {
-                background-color: #3498db;
+                background-color: #555555;
                 color: white;
                 border: none;
-                border-radius: 5px;
-                padding: 8px 15px;
+                border-radius: 2px;
+                padding: 4px 8px;
                 font-weight: bold;
-                font-size: 11px;
+                font-size: 9px;
             }
             
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #444444;
             }
             
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #333333;
             }
             
             QPushButton#playButton {
-                background-color: #27ae60;
+                background-color: #555555;
             }
             
             QPushButton#playButton:hover {
-                background-color: #229954;
+                background-color: #444444;
             }
             
             QPushButton#resetButton {
-                background-color: #e67e22;
+                background-color: #555555;
             }
             
             QPushButton#resetButton:hover {
-                background-color: #d35400;
+                background-color: #444444;
             }
             
             QPushButton#newTrajButton {
-                background-color: #9b59b6;
+                background-color: #555555;
             }
             
             QPushButton#newTrajButton:hover {
-                background-color: #8e44ad;
+                background-color: #444444;
             }
             
             QPushButton#generateButton {
-                background-color: #16a085;
+                background-color: #555555;
             }
             
             QPushButton#generateButton:hover {
-                background-color: #138d75;
+                background-color: #444444;
             }
             
             QPushButton#applyButton {
-                background-color: #e74c3c;
+                background-color: #555555;
             }
             
             QPushButton#applyButton:hover {
-                background-color: #c0392b;
+                background-color: #444444;
             }
             
             QPushButton#applyButton:disabled {
-                background-color: #95a5a6;
+                background-color: #888888;
             }
             
             QSlider::groove:horizontal {
-                border: 1px solid #bdc3c7;
-                height: 8px;
-                background: #ecf0f1;
-                border-radius: 4px;
+                border: 1px solid #666666;
+                height: 6px;
+                background: #cccccc;
+                border-radius: 3px;
             }
             
             QSlider::handle:horizontal {
-                background: #3498db;
-                border: 1px solid #2980b9;
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
+                background: #555555;
+                border: 1px solid #444444;
+                width: 14px;
+                margin: -4px 0;
+                border-radius: 7px;
             }
             
             QSlider::handle:horizontal:hover {
-                background: #2980b9;
+                background: #444444;
             }
             
             QCheckBox {
-                spacing: 5px;
-                color: #2c3e50;
+                spacing: 4px;
+                color: #222222;
             }
             
             QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-                border-radius: 3px;
-                border: 2px solid #3498db;
+                width: 14px;
+                height: 14px;
+                border-radius: 2px;
+                border: 1px solid #555555;
             }
             
             QCheckBox::indicator:checked {
-                background-color: #3498db;
+                background-color: #555555;
                 image: url(none);
             }
             
             QListWidget {
-                border: 2px solid #bdc3c7;
-                border-radius: 5px;
-                background-color: #ffffff;
-                padding: 5px;
+                border: 1px solid #666666;
+                border-radius: 2px;
+                background-color: #f5f5f5;
+                padding: 3px;
+                font-size: 8px;
             }
             
             QListWidget::item {
-                padding: 5px;
-                border-radius: 3px;
+                padding: 3px;
+                border-radius: 2px;
             }
             
             QListWidget::item:selected {
-                background-color: #3498db;
+                background-color: #777777;
                 color: white;
             }
             
             QListWidget::item:hover {
-                background-color: #ecf0f1;
+                background-color: #dddddd;
             }
             
             QLabel {
-                color: #2c3e50;
+                color: #222222;
             }
         """
         self.setStyleSheet(stylesheet)
     
     def setup_3d_scene(self):
         """Setup 3D visualization scene"""
-        # Grid
+        # Grid (monochrome)
         grid = gl.GLGridItem()
         grid.scale(2, 2, 1)
-        grid.setColor((100, 100, 100, 100))
+        grid.setColor((80, 80, 80, 100))
         self.plot_widget.addItem(grid)
         
-        # Trajectory line
+        # Trajectory line (monochrome gray)
         self.trajectory_line = gl.GLLinePlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.2, 0.8, 0.2, 1),
-            width=3,
+            color=(0.4, 0.4, 0.4, 1),
+            width=2,
             antialias=True
         )
         self.plot_widget.addItem(self.trajectory_line)
         
-        # Drone marker (larger and more visible)
+        # Drone marker (monochrome white/gray)
         self.drone_marker = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 5]]),
-            color=(1, 0.2, 0.2, 1),
-            size=15,
+            color=(0.9, 0.9, 0.9, 1),
+            size=12,
             pxMode=True
         )
         self.plot_widget.addItem(self.drone_marker)
         
-        # Waypoint markers (blue)
+        # Waypoint markers (colored - cyan/blue)
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.2, 0.4, 1, 1),
-            size=12,
+            color=(0.0, 0.8, 1.0, 1),
+            size=14,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
         
-        # User waypoint markers (different color - yellow/gold)
+        # User waypoint markers (colored - magenta/pink)
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(1, 0.8, 0, 1),
-            size=14,
+            color=(1.0, 0.2, 0.8, 1),
+            size=16,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers)
@@ -815,11 +820,11 @@ class DroneSimulationWindow(QMainWindow):
         self.is_playing = not self.is_playing
         
         if self.is_playing:
-            self.play_btn.setText("⏸️ Pause")
+            self.play_btn.setText("Pause")
             self.timer.start(int(100 / self.playback_speed))  # 100ms base
             self.statusBar().showMessage("Simulation playing", 2000)
         else:
-            self.play_btn.setText("▶️ Play")
+            self.play_btn.setText("Play")
             self.timer.stop()
             self.statusBar().showMessage("Simulation paused", 2000)
     
@@ -827,7 +832,7 @@ class DroneSimulationWindow(QMainWindow):
         """Reset simulation to start"""
         self.current_step = 0
         self.is_playing = False
-        self.play_btn.setText("▶️ Play")
+        self.play_btn.setText("Play")
         self.timer.stop()
         self.update_visualization()
         self.statusBar().showMessage("Simulation reset", 2000)
@@ -850,7 +855,7 @@ class DroneSimulationWindow(QMainWindow):
         if self.current_step >= len(self.current_trajectory['positions']):
             self.current_step = len(self.current_trajectory['positions']) - 1
             self.is_playing = False
-            self.play_btn.setText("▶️ Play")
+            self.play_btn.setText("Play")
             self.timer.stop()
             self.statusBar().showMessage("Simulation complete", 3000)
         
