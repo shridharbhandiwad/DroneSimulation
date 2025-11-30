@@ -221,9 +221,9 @@ class DroneSimulationWindow(QMainWindow):
         legend_box.setStyleSheet("")  # Will be styled by theme
         legend_text = """<b>Legend:</b><br>
 <span style='color: #3399db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #26a69a;'>●</span> <b>Trajectory WP</b> (Teal)<br>
-<span style='color: #ab47ba;'>●</span> <b>User WP</b> (Purple)<br>
-<span style='color: #4caf50;'>●</span> <b>Visited</b> (Green)<br>
+<span style='color: #00cccc;'>●</span> <b>Trajectory WP</b> (Cyan)<br>
+<span style='color: #b933cc;'>●</span> <b>User WP</b> (Purple)<br>
+<span style='color: #33cc33;'>●</span> <b>Visited</b> (Green)<br>
 <span style='color: #ffc107;'>●</span> <b>Target</b> (Gold)<br>
 <span style='color: #ff7700;'>━</span> <b>Trail</b> (Orange)<br>
 <span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
@@ -322,32 +322,32 @@ class DroneSimulationWindow(QMainWindow):
         camera_group.setLayout(camera_layout)
         left_panel.addWidget(camera_group)
         
-        # Visual options group
+        # Visual options group - ALL ON ONE LINE
         visual_group = QGroupBox("Visual Options")
         visual_group.setFont(QFont("Arial", 10, QFont.Bold))
-        visual_layout = QVBoxLayout()
-        visual_layout.setSpacing(6)
+        visual_layout = QHBoxLayout()  # Changed to horizontal layout
+        visual_layout.setSpacing(10)
         visual_layout.setContentsMargins(10, 12, 10, 10)
         
-        self.show_trail_checkbox = QCheckBox("Show Trail Effect")
+        self.show_trail_checkbox = QCheckBox("Trail")
         self.show_trail_checkbox.setFont(QFont("Arial", 9))
         self.show_trail_checkbox.setChecked(False)
         self.show_trail_checkbox.stateChanged.connect(self.toggle_trail)
         visual_layout.addWidget(self.show_trail_checkbox)
         
-        self.show_velocity_checkbox = QCheckBox("Show Velocity Vector")
+        self.show_velocity_checkbox = QCheckBox("Velocity")
         self.show_velocity_checkbox.setFont(QFont("Arial", 9))
         self.show_velocity_checkbox.setChecked(False)
         self.show_velocity_checkbox.stateChanged.connect(self.toggle_velocity_vector)
         visual_layout.addWidget(self.show_velocity_checkbox)
         
-        self.show_connections_checkbox = QCheckBox("Show Waypoint Connections")
+        self.show_connections_checkbox = QCheckBox("Connections")
         self.show_connections_checkbox.setFont(QFont("Arial", 9))
         self.show_connections_checkbox.setChecked(False)
         self.show_connections_checkbox.stateChanged.connect(self.toggle_connections)
         visual_layout.addWidget(self.show_connections_checkbox)
         
-        self.show_target_line_checkbox = QCheckBox("Show Target Line")
+        self.show_target_line_checkbox = QCheckBox("Target Line")
         self.show_target_line_checkbox.setFont(QFont("Arial", 9))
         self.show_target_line_checkbox.setChecked(False)
         self.show_target_line_checkbox.stateChanged.connect(self.toggle_target_line)
@@ -397,44 +397,34 @@ class DroneSimulationWindow(QMainWindow):
         click_mode_layout.addWidget(self.click_mode_checkbox)
         waypoint_layout.addLayout(click_mode_layout)
         
-        # Height control for clicked waypoints
-        height_layout = QVBoxLayout()
-        height_layout.setSpacing(4)
-        height_lbl = QLabel("Waypoint Height:")
+        # Height control for clicked waypoints - using text box
+        height_layout = QHBoxLayout()
+        height_layout.setSpacing(8)
+        height_lbl = QLabel("Height (m):")
         height_lbl.setObjectName("controlLabel")
         height_layout.addWidget(height_lbl)
         
-        height_control = QHBoxLayout()
-        self.height_slider = QSlider(Qt.Horizontal)
-        self.height_slider.setMinimum(5)
-        self.height_slider.setMaximum(30)
-        self.height_slider.setValue(10)
-        self.height_slider.valueChanged.connect(self.update_click_height)
-        height_control.addWidget(self.height_slider)
-        self.height_label = QLabel("10m")
-        self.height_label.setObjectName("valueLabel")
-        height_control.addWidget(self.height_label)
-        height_layout.addLayout(height_control)
+        self.height_input = QLineEdit()
+        self.height_input.setText("10")
+        self.height_input.setMaximumWidth(80)
+        self.height_input.setPlaceholderText("10")
+        self.height_input.textChanged.connect(self.update_click_height_from_text)
+        height_layout.addWidget(self.height_input)
         waypoint_layout.addLayout(height_layout)
         
-        # Speed control for clicked waypoints
-        speed_layout = QVBoxLayout()
-        speed_layout.setSpacing(4)
-        speed_lbl = QLabel("Waypoint Speed:")
+        # Speed control for clicked waypoints - using text box
+        speed_layout = QHBoxLayout()
+        speed_layout.setSpacing(8)
+        speed_lbl = QLabel("Speed (m/s):")
         speed_lbl.setObjectName("controlLabel")
         speed_layout.addWidget(speed_lbl)
         
-        speed_control = QHBoxLayout()
-        self.waypoint_speed_slider = QSlider(Qt.Horizontal)
-        self.waypoint_speed_slider.setMinimum(1)
-        self.waypoint_speed_slider.setMaximum(15)
-        self.waypoint_speed_slider.setValue(10)
-        self.waypoint_speed_slider.valueChanged.connect(self.update_click_speed)
-        speed_control.addWidget(self.waypoint_speed_slider)
-        self.waypoint_speed_label = QLabel("10 m/s")
-        self.waypoint_speed_label.setObjectName("valueLabel")
-        speed_control.addWidget(self.waypoint_speed_label)
-        speed_layout.addLayout(speed_control)
+        self.waypoint_speed_input = QLineEdit()
+        self.waypoint_speed_input.setText("10")
+        self.waypoint_speed_input.setMaximumWidth(80)
+        self.waypoint_speed_input.setPlaceholderText("10")
+        self.waypoint_speed_input.textChanged.connect(self.update_click_speed_from_text)
+        speed_layout.addWidget(self.waypoint_speed_input)
         waypoint_layout.addLayout(speed_layout)
         
         # Waypoint list
@@ -1271,19 +1261,19 @@ class DroneSimulationWindow(QMainWindow):
         self.create_drone_model()
         self.propeller_rotation = 0.0  # Track propeller rotation angle
         
-        # Waypoint markers with glow - theme-compliant (teal for generated waypoints)
+        # Waypoint markers with glow - BRIGHT CYAN/TEAL (NOT white) - theme-compliant
         self.waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 0.25),  # Teal glow - theme-compliant
-            size=20,
+            color=(0.0, 0.6, 0.6, 0.3),  # Bright cyan glow (NOT white)
+            size=22,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers_glow)
         
         self.waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.15, 0.65, 0.60, 1.0),  # Teal - theme-compliant
-            size=12,
+            color=(0.0, 0.6, 0.6, 1.0),  # Bright cyan (NOT white)
+            size=14,
             pxMode=True
         )
         self.plot_widget.addItem(self.waypoint_markers)
@@ -1300,19 +1290,19 @@ class DroneSimulationWindow(QMainWindow):
         )
         self.plot_widget.addItem(self.target_waypoint_marker)
         
-        # User waypoint markers with glow - theme-compliant (purple for user waypoints)
+        # User waypoint markers with glow - BRIGHT PURPLE (NOT white) - theme-compliant
         self.user_waypoint_markers_glow = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.67, 0.28, 0.73, 0.25),  # Purple glow - theme-compliant
-            size=22,
+            color=(0.7, 0.2, 0.8, 0.3),  # Bright purple glow (NOT white)
+            size=24,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers_glow)
         
         self.user_waypoint_markers = gl.GLScatterPlotItem(
             pos=np.array([[0, 0, 0]]),
-            color=(0.67, 0.28, 0.73, 1.0),  # Purple - theme-compliant
-            size=14,
+            color=(0.7, 0.2, 0.8, 1.0),  # Bright purple (NOT white)
+            size=16,
             pxMode=True
         )
         self.plot_widget.addItem(self.user_waypoint_markers)
@@ -1651,15 +1641,27 @@ class DroneSimulationWindow(QMainWindow):
             self.plot_widget.setCursor(Qt.ArrowCursor)
             self.statusBar().showMessage("Click mode disabled", 2000)
     
-    def update_click_height(self, value):
-        """Update the height for clicked waypoints"""
-        self.click_height = float(value)
-        self.height_label.setText(f"{value}m")
+    def update_click_height_from_text(self, text):
+        """Update the height for clicked waypoints from text input"""
+        try:
+            value = float(text) if text else 10.0
+            # Clamp value between reasonable bounds
+            value = max(1.0, min(100.0, value))
+            self.click_height = value
+        except ValueError:
+            # If invalid input, keep current value
+            pass
     
-    def update_click_speed(self, value):
-        """Update the speed for clicked waypoints"""
-        self.click_speed = float(value)
-        self.waypoint_speed_label.setText(f"{value} m/s")
+    def update_click_speed_from_text(self, text):
+        """Update the speed for clicked waypoints from text input"""
+        try:
+            value = float(text) if text else 10.0
+            # Clamp value between reasonable bounds
+            value = max(0.1, min(50.0, value))
+            self.click_speed = value
+        except ValueError:
+            # If invalid input, keep current value
+            pass
     
     def add_waypoint(self, position, speed=None):
         """Add a waypoint to the list"""
@@ -1707,33 +1709,72 @@ class DroneSimulationWindow(QMainWindow):
             self.statusBar().showMessage("Waypoint removed", 2000)
     
     def clear_waypoints(self):
-        """Clear all waypoints"""
-        if self.user_waypoints:
+        """Clear all waypoints and trajectory"""
+        if self.user_waypoints or self.current_trajectory is not None:
             reply = QMessageBox.question(self, 'Clear Waypoints', 
-                                        'Are you sure you want to clear all waypoints?',
+                                        'Are you sure you want to clear all waypoints and trajectory?',
                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             
             if reply == QMessageBox.Yes:
+                # Clear user waypoints
                 self.user_waypoints.clear()
                 self.waypoint_list.clear()
+                
+                # Clear current trajectory
+                self.current_trajectory = None
+                self.current_step = 0
+                self.is_playing = False
+                self.play_btn.setText("▶ Play")
+                self.timer.stop()
+                
+                # Clear visited waypoints
+                self.visited_waypoints.clear()
+                
+                # Clear all 3D visualization elements
+                self.trajectory_line.setData(pos=np.array([[0, 0, 0]]))
+                self.trail_line.setData(pos=np.array([[0, 0, 0]]))
+                self.waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
+                self.waypoint_markers_glow.setData(pos=np.array([[1000, 1000, 1000]]))
+                self.target_waypoint_marker.setData(pos=np.array([[1000, 1000, 1000]]))
+                self.waypoint_connections.setData(pos=np.array([[0, 0, 0]]))
+                self.target_line.setData(pos=np.array([[0, 0, 0], [0, 0, 0]]))
+                self.velocity_vector.setData(pos=np.array([[0, 0, 0], [0, 0, 0]]))
+                
+                # Clear waypoint labels
+                for text_item in self.waypoint_text_items:
+                    self.plot_widget.removeItem(text_item)
+                self.waypoint_text_items.clear()
+                
+                # Update user waypoint markers
                 self.update_user_waypoint_markers()
-                self.statusBar().showMessage("All waypoints cleared", 2000)
+                
+                # Reset drone to origin
+                initial_pos = np.array([0, 0, 5])
+                initial_vel = np.array([0, 0, 0])
+                self.update_drone_model_position(initial_pos, initial_vel)
+                
+                # Reset info labels
+                for key in self.info_labels:
+                    self.info_labels[key].setText("N/A")
+                
+                self.statusBar().showMessage("All waypoints and trajectory cleared", 2000)
     
     def update_user_waypoint_markers(self):
-        """Update the visual markers for user waypoints - theme-compliant"""
+        """Update the visual markers for user waypoints - BRIGHT PURPLE (NOT white) - theme-compliant"""
         if self.user_waypoints:
             positions = np.array([wp['position'] for wp in self.user_waypoints])
             
-            # Theme-compliant colors for user waypoints (purple)
+            # BRIGHT, VIVID purple colors (NOT white) - theme-compliant
             if self.current_theme == 'white':
-                color = (0.67, 0.28, 0.73, 1.0)      # Purple
-                glow_color = (0.67, 0.28, 0.73, 0.25)
+                color = (0.7, 0.2, 0.8, 1.0)         # Bright purple (NOT white)
+                glow_color = (0.7, 0.2, 0.8, 0.3)
             else:
-                color = (0.77, 0.38, 0.83, 1.0)      # Brighter purple for dark background
-                glow_color = (0.77, 0.38, 0.83, 0.25)
+                color = (0.85, 0.3, 0.95, 1.0)       # Maximum bright purple for dark background (NOT white)
+                glow_color = (0.85, 0.3, 0.95, 0.3)
             
-            self.user_waypoint_markers.setData(pos=positions, color=color)
-            self.user_waypoint_markers_glow.setData(pos=positions, color=glow_color)
+            # Explicitly set size for visibility
+            self.user_waypoint_markers.setData(pos=positions, color=color, size=16)
+            self.user_waypoint_markers_glow.setData(pos=positions, color=glow_color, size=24)
         else:
             # Hide markers by placing them off-screen
             self.user_waypoint_markers.setData(pos=np.array([[1000, 1000, 1000]]))
@@ -1903,7 +1944,7 @@ class DroneSimulationWindow(QMainWindow):
         self.statusBar().showMessage(f"Generated random trajectory with {num_waypoints} waypoints", 2000)
     
     def update_waypoint_colors(self):
-        """Update waypoint colors based on visited status - theme-compliant"""
+        """Update waypoint colors based on visited status - theme-compliant with BRIGHT colors"""
         if self.current_trajectory is None:
             return
         
@@ -1914,19 +1955,19 @@ class DroneSimulationWindow(QMainWindow):
         colors = np.zeros((num_waypoints, 4))
         colors_glow = np.zeros((num_waypoints, 4))
         
-        # Theme-compliant colors
+        # BRIGHT, VIVID colors that are NEVER white - theme-compliant
         if self.current_theme == 'white':
-            # White theme colors
-            visited_color = [0.3, 0.75, 0.3, 1.0]      # Vibrant green for visited
-            visited_glow = [0.3, 0.75, 0.3, 0.25]
-            unvisited_color = [0.15, 0.65, 0.60, 1.0]  # Teal for unvisited
-            unvisited_glow = [0.15, 0.65, 0.60, 0.25]
+            # White theme colors - VIBRANT and SATURATED
+            visited_color = [0.2, 0.8, 0.2, 1.0]       # Bright green for visited (NOT white)
+            visited_glow = [0.2, 0.8, 0.2, 0.3]
+            unvisited_color = [0.0, 0.6, 0.6, 1.0]     # Vibrant cyan/teal for unvisited (NOT white)
+            unvisited_glow = [0.0, 0.6, 0.6, 0.3]
         else:
-            # Black theme colors - brighter for visibility
-            visited_color = [0.4, 0.9, 0.4, 1.0]       # Bright green for visited
-            visited_glow = [0.4, 0.9, 0.4, 0.25]
-            unvisited_color = [0.2, 0.75, 0.70, 1.0]   # Bright teal for unvisited
-            unvisited_glow = [0.2, 0.75, 0.70, 0.25]
+            # Black theme colors - MAXIMUM brightness for visibility
+            visited_color = [0.3, 1.0, 0.3, 1.0]       # Maximum bright green for visited (NOT white)
+            visited_glow = [0.3, 1.0, 0.3, 0.3]
+            unvisited_color = [0.0, 0.9, 0.9, 1.0]     # Maximum bright cyan for unvisited (NOT white)
+            unvisited_glow = [0.0, 0.9, 0.9, 0.3]
         
         for i in range(num_waypoints):
             if i in self.visited_waypoints:
@@ -1936,12 +1977,12 @@ class DroneSimulationWindow(QMainWindow):
                 colors[i] = unvisited_color
                 colors_glow[i] = unvisited_glow
         
-        # Update markers with new colors
-        self.waypoint_markers.setData(pos=waypoints, color=colors)
-        self.waypoint_markers_glow.setData(pos=waypoints, color=colors_glow)
+        # Update markers with new BRIGHT colors - explicitly set size too for visibility
+        self.waypoint_markers.setData(pos=waypoints, color=colors, size=14)
+        self.waypoint_markers_glow.setData(pos=waypoints, color=colors_glow, size=22)
     
     def update_waypoint_labels(self):
-        """Update waypoint text labels"""
+        """Update waypoint text labels - ensuring they are always visible"""
         # Remove old text items
         for text_item in self.waypoint_text_items:
             self.plot_widget.removeItem(text_item)
@@ -1952,25 +1993,30 @@ class DroneSimulationWindow(QMainWindow):
         
         waypoints = self.current_trajectory['waypoints']
         
-        # Create text label for each waypoint
+        # Create text label for each waypoint with high contrast colors
         for i, wp in enumerate(waypoints):
             # Determine color based on visited status and theme
+            # Use VERY HIGH contrast colors for maximum visibility
             if i in self.visited_waypoints:
-                # Green for visited (brighter for visibility)
-                color = (0.0, 1.0, 0.0, 1.0) if self.current_theme == 'white' else (0.2, 1.0, 0.2, 1.0)
-            else:
-                # High contrast colors for unvisited based on theme
+                # Bright green for visited - highly visible
                 if self.current_theme == 'white':
-                    color = (0.0, 0.0, 0.0, 1.0)  # Black on white background
+                    color = (0.0, 0.8, 0.0, 1.0)  # Dark green on white
                 else:
-                    color = (1.0, 1.0, 1.0, 1.0)  # White on black background
+                    color = (0.3, 1.0, 0.3, 1.0)  # Bright green on black
+            else:
+                # Maximum contrast for unvisited waypoints
+                if self.current_theme == 'white':
+                    color = (0.0, 0.0, 0.0, 1.0)  # Pure black on white background
+                else:
+                    color = (1.0, 1.0, 1.0, 1.0)  # Pure white on black background
             
-            # Create text item with waypoint number - larger and bolder for better visibility
+            # Create text item with waypoint number - LARGE and BOLD for visibility
+            # Position offset slightly higher for better visibility
             text = gl.GLTextItem(
-                pos=(wp[0], wp[1], wp[2] + 2.5),  # Position slightly higher above waypoint
-                text=f"WP{i + 1}",  # Add "WP" prefix for clarity
+                pos=(wp[0], wp[1], wp[2] + 3.0),  # Position higher above waypoint
+                text=f"WP{i + 1}",  # Clear "WP" prefix with number
                 color=color,
-                font=pg.QtGui.QFont('Arial', 14, pg.QtGui.QFont.Bold)
+                font=pg.QtGui.QFont('Arial', 16, pg.QtGui.QFont.Bold)  # Larger font
             )
             self.plot_widget.addItem(text)
             self.waypoint_text_items.append(text)
@@ -1984,16 +2030,20 @@ class DroneSimulationWindow(QMainWindow):
         positions = self.current_trajectory['positions']
         self.trajectory_line.setData(pos=positions)
         
-        # Update waypoint markers with colors
+        # Update waypoint markers with colors - ALWAYS call this to ensure colors are correct
         self.update_waypoint_colors()
         
-        # Update waypoint text labels
+        # Update waypoint text labels - ALWAYS show WP numbers
         self.update_waypoint_labels()
         
         # Update waypoint connections
         waypoints = self.current_trajectory['waypoints']
         if len(waypoints) > 1:
-            self.waypoint_connections.setData(pos=waypoints)
+            # Only show connections if checkbox is enabled
+            if self.show_connections:
+                self.waypoint_connections.setData(pos=waypoints)
+            else:
+                self.waypoint_connections.setData(pos=np.array([[0, 0, 0]]))
     
     def toggle_play(self):
         """Toggle play/pause"""
