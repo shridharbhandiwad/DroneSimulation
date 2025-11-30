@@ -160,10 +160,10 @@ class DroneSimulationWindow(QMainWindow):
         # Title for 3D view with icon
         view_header = QHBoxLayout()
         view_title = QLabel("3D Trajectory View")
-        view_title.setFont(QFont("Georgia", 14, QFont.Bold))
+        view_title.setFont(QFont("Arial", 12, QFont.Bold))
         view_title.setStyleSheet("""
             color: #1e3a5f; 
-            padding: 10px;
+            padding: 8px;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #f5f1e8, stop:1 #ffffff);
             border-radius: 6px;
@@ -198,10 +198,10 @@ class DroneSimulationWindow(QMainWindow):
         
         # Playback controls group
         control_group = QGroupBox("Simulation Controls")
-        control_group.setFont(QFont("Georgia", 11, QFont.Bold))
+        control_group.setFont(QFont("Arial", 10, QFont.Bold))
         control_layout = QGridLayout()
         control_layout.setSpacing(8)
-        control_layout.setContentsMargins(12, 15, 12, 12)
+        control_layout.setContentsMargins(10, 12, 10, 10)
         
         self.play_btn = QPushButton("Play")
         self.play_btn.clicked.connect(self.toggle_play)
@@ -222,7 +222,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.new_traj_btn, 0, 2)
         
         speed_label = QLabel("Playback Speed:")
-        speed_label.setStyleSheet("font-weight: 600; font-size: 10px; color: #2c3e50;")
+        speed_label.setStyleSheet("font-weight: 600; font-size: 9pt; color: #2c3e50;")
         control_layout.addWidget(speed_label, 1, 0)
         
         self.speed_slider = QSlider(Qt.Horizontal)
@@ -233,7 +233,7 @@ class DroneSimulationWindow(QMainWindow):
         control_layout.addWidget(self.speed_slider, 1, 1)
         
         self.speed_label = QLabel("1.0x")
-        self.speed_label.setStyleSheet("font-weight: bold; font-size: 11px; color: #8b6914;")
+        self.speed_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #8b6914;")
         control_layout.addWidget(self.speed_label, 1, 2)
         
         control_group.setLayout(control_layout)
@@ -245,15 +245,15 @@ class DroneSimulationWindow(QMainWindow):
         
         # Waypoint controls
         waypoint_group = QGroupBox("Waypoint Manager")
-        waypoint_group.setFont(QFont("Georgia", 11, QFont.Bold))
+        waypoint_group.setFont(QFont("Arial", 10, QFont.Bold))
         waypoint_layout = QVBoxLayout()
-        waypoint_layout.setSpacing(10)
-        waypoint_layout.setContentsMargins(12, 15, 12, 12)
+        waypoint_layout.setSpacing(8)
+        waypoint_layout.setContentsMargins(10, 12, 10, 10)
         
         # Click mode toggle
         click_mode_layout = QHBoxLayout()
         self.click_mode_checkbox = QCheckBox("Click to Add Waypoints")
-        self.click_mode_checkbox.setFont(QFont("Georgia", 9))
+        self.click_mode_checkbox.setFont(QFont("Arial", 9))
         self.click_mode_checkbox.stateChanged.connect(self.toggle_click_mode)
         click_mode_layout.addWidget(self.click_mode_checkbox)
         waypoint_layout.addLayout(click_mode_layout)
@@ -262,7 +262,7 @@ class DroneSimulationWindow(QMainWindow):
         height_layout = QVBoxLayout()
         height_layout.setSpacing(4)
         height_lbl = QLabel("Waypoint Height:")
-        height_lbl.setStyleSheet("font-weight: 600; font-size: 10px; color: #4a4a4a;")
+        height_lbl.setStyleSheet("font-weight: 600; font-size: 9pt; color: #4a4a4a;")
         height_layout.addWidget(height_lbl)
         
         height_control = QHBoxLayout()
@@ -273,14 +273,14 @@ class DroneSimulationWindow(QMainWindow):
         self.height_slider.valueChanged.connect(self.update_click_height)
         height_control.addWidget(self.height_slider)
         self.height_label = QLabel("10m")
-        self.height_label.setStyleSheet("font-weight: bold; font-size: 10px; color: #8b6914; min-width: 40px;")
+        self.height_label.setStyleSheet("font-weight: bold; font-size: 9pt; color: #8b6914; min-width: 40px;")
         height_control.addWidget(self.height_label)
         height_layout.addLayout(height_control)
         waypoint_layout.addLayout(height_layout)
         
         # Waypoint list
         list_label = QLabel("Active Waypoints:")
-        list_label.setStyleSheet("font-weight: 600; font-size: 10px; margin-top: 6px; color: #4a4a4a;")
+        list_label.setStyleSheet("font-weight: 600; font-size: 9pt; margin-top: 6px; color: #4a4a4a;")
         waypoint_layout.addWidget(list_label)
         
         self.waypoint_list = QListWidget()
@@ -319,7 +319,7 @@ class DroneSimulationWindow(QMainWindow):
         
         # Dynamic waypoint mode toggle
         self.dynamic_mode_checkbox = QCheckBox("Enable Dynamic Mode")
-        self.dynamic_mode_checkbox.setFont(QFont("Georgia", 9))
+        self.dynamic_mode_checkbox.setFont(QFont("Arial", 9))
         self.dynamic_mode_checkbox.setStyleSheet("margin-top: 4px;")
         self.dynamic_mode_checkbox.stateChanged.connect(self.toggle_dynamic_mode)
         gen_btn_layout.addWidget(self.dynamic_mode_checkbox)
@@ -338,10 +338,10 @@ class DroneSimulationWindow(QMainWindow):
         
         # Info panel
         info_group = QGroupBox("Flight Telemetry")
-        info_group.setFont(QFont("Georgia", 11, QFont.Bold))
+        info_group.setFont(QFont("Arial", 10, QFont.Bold))
         info_layout = QGridLayout()
-        info_layout.setSpacing(8)
-        info_layout.setContentsMargins(12, 15, 12, 12)
+        info_layout.setSpacing(6)
+        info_layout.setContentsMargins(10, 12, 10, 10)
         
         self.info_labels = {}
         info_items = [
@@ -355,10 +355,10 @@ class DroneSimulationWindow(QMainWindow):
         
         for i, (label, key) in enumerate(info_items):
             label_widget = QLabel(f"{label}:")
-            label_widget.setStyleSheet("font-weight: 600; font-size: 10px; color: #4a4a4a;")
+            label_widget.setStyleSheet("font-weight: 600; font-size: 9pt; color: #4a4a4a;")
             info_layout.addWidget(label_widget, i, 0)
             value_label = QLabel("N/A")
-            value_label.setStyleSheet("font-size: 10px; color: #8b6914; font-weight: 600;")
+            value_label.setStyleSheet("font-size: 9pt; color: #8b6914; font-weight: 600;")
             self.info_labels[key] = value_label
             info_layout.addWidget(value_label, i, 1)
         
@@ -367,21 +367,21 @@ class DroneSimulationWindow(QMainWindow):
         
         # ML status
         ml_group = QGroupBox("AI Status")
-        ml_group.setFont(QFont("Georgia", 11, QFont.Bold))
+        ml_group.setFont(QFont("Arial", 10, QFont.Bold))
         ml_layout = QVBoxLayout()
-        ml_layout.setContentsMargins(12, 15, 12, 12)
+        ml_layout.setContentsMargins(10, 12, 10, 10)
         ml_status_text = "ML Model Active" if self.use_ml else "Physics Mode"
         ml_status = QLabel(ml_status_text)
         ml_status.setStyleSheet("""
-            font-size: 10px; 
-            padding: 10px; 
+            font-size: 9pt; 
+            padding: 8px; 
             background-color: #d4edda;
             border-radius: 4px;
             color: #2d5016;
             font-weight: 600;
         """ if self.use_ml else """
-            font-size: 10px; 
-            padding: 10px; 
+            font-size: 9pt; 
+            padding: 8px; 
             background-color: #e8dcc5;
             border-radius: 4px;
             color: #1e3a5f;
@@ -398,10 +398,10 @@ class DroneSimulationWindow(QMainWindow):
         # Camera header
         camera_header = QHBoxLayout()
         camera_title = QLabel("FPV Camera Feed")
-        camera_title.setFont(QFont("Georgia", 14, QFont.Bold))
+        camera_title.setFont(QFont("Arial", 12, QFont.Bold))
         camera_title.setStyleSheet("""
             color: #1e3a5f; 
-            padding: 10px;
+            padding: 8px;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #f5f1e8, stop:1 #ffffff);
             border-radius: 6px;
@@ -450,17 +450,17 @@ class DroneSimulationWindow(QMainWindow):
             QGroupBox {
                 border: 2px solid #c8b896;
                 border-radius: 8px;
-                margin-top: 14px;
-                padding: 14px;
+                margin-top: 12px;
+                padding: 12px;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #ffffff, stop:1 #fdfbf7);
-                font-weight: 700;
+                font-weight: 600;
             }
             
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 14px;
-                padding: 0 10px;
+                left: 12px;
+                padding: 0 8px;
                 color: #1e3a5f;
                 background: transparent;
             }
@@ -472,10 +472,10 @@ class DroneSimulationWindow(QMainWindow):
                 color: white;
                 border: 1px solid #1a2f4a;
                 border-radius: 5px;
-                padding: 9px 18px;
+                padding: 8px 16px;
                 font-weight: 600;
-                font-size: 11px;
-                font-family: "Georgia", "Times New Roman", serif;
+                font-size: 9pt;
+                font-family: "Arial", "Helvetica", sans-serif;
             }
             
             QPushButton:hover {
@@ -647,13 +647,13 @@ class DroneSimulationWindow(QMainWindow):
                 border: 2px solid #c8b896;
                 border-radius: 6px;
                 background: white;
-                padding: 6px;
-                font-size: 10px;
-                font-family: "Georgia", "Times New Roman", serif;
+                padding: 4px;
+                font-size: 9pt;
+                font-family: "Arial", "Helvetica", sans-serif;
             }
             
             QListWidget::item {
-                padding: 8px 10px;
+                padding: 6px 8px;
                 border-radius: 4px;
                 margin: 2px;
                 color: #2c3e50;
@@ -680,7 +680,7 @@ class DroneSimulationWindow(QMainWindow):
                 background: #ffffff;
                 color: #4a4a4a;
                 border-top: 2px solid #c8b896;
-                font-size: 10px;
+                font-size: 9pt;
                 padding: 4px;
             }
         """
