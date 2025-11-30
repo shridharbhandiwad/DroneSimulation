@@ -106,7 +106,8 @@ class DroneSimulationWindow(QMainWindow):
         
         # Initialize components
         self.trajectory_generator = TrajectoryGenerator(dt=0.1)
-        self.camera_sim = CameraSimulator()
+        # Camera disabled - uncomment below to re-enable
+        # self.camera_sim = CameraSimulator()
         
         # Try to load ML model if available
         self.use_ml = False
@@ -391,7 +392,9 @@ class DroneSimulationWindow(QMainWindow):
         ml_group.setLayout(ml_layout)
         middle_panel.addWidget(ml_group)
         
-        # Right panel - Camera feed
+        # Right panel - Camera feed (DISABLED)
+        # Uncomment the section below to re-enable the FPV camera feed
+        """
         right_panel = QVBoxLayout()
         right_panel.setSpacing(8)
         
@@ -399,45 +402,45 @@ class DroneSimulationWindow(QMainWindow):
         camera_header = QHBoxLayout()
         camera_title = QLabel("FPV Camera Feed")
         camera_title.setFont(QFont("Arial", 12, QFont.Bold))
-        camera_title.setStyleSheet("""
+        camera_title.setStyleSheet(
             color: #1e3a5f; 
             padding: 8px;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #f5f1e8, stop:1 #ffffff);
             border-radius: 6px;
             border-left: 5px solid #722f37;
-        """)
+        )
         camera_header.addWidget(camera_title)
         right_panel.addLayout(camera_header)
         
         # Camera container with modern styling
         camera_container = QFrame()
         camera_container.setObjectName("cameraContainer")
-        camera_container.setStyleSheet("""
+        camera_container.setStyleSheet(
             #cameraContainer {
                 background: #1a1a1a;
                 border-radius: 8px;
                 border: 2px solid #333333;
             }
-        """)
+        )
         camera_layout = QVBoxLayout(camera_container)
         camera_layout.setContentsMargins(4, 4, 4, 4)
         
         self.camera_label = QLabel()
         self.camera_label.setMinimumSize(640, 480)
         self.camera_label.setScaledContents(True)
-        self.camera_label.setStyleSheet("""
+        self.camera_label.setStyleSheet(
             border: none;
             border-radius: 4px;
             background-color: #000000;
-        """)
+        )
         camera_layout.addWidget(self.camera_label)
         right_panel.addWidget(camera_container)
+        """
         
-        # Add panels to main layout with better proportions
-        main_layout.addLayout(left_panel, 4)
-        main_layout.addLayout(middle_panel, 2)
-        main_layout.addLayout(right_panel, 3)
+        # Add panels to main layout with better proportions (camera disabled)
+        main_layout.addLayout(left_panel, 5)
+        main_layout.addLayout(middle_panel, 3)
     
     def apply_stylesheet(self):
         """Apply elegant, classic stylesheet to the application"""
@@ -1072,7 +1075,9 @@ class DroneSimulationWindow(QMainWindow):
             f"({100*self.current_step/(len(positions)-1):.1f}%)"
         )
         
-        # Update camera view
+        # Update camera view (DISABLED)
+        # Uncomment the section below to re-enable camera rendering
+        """
         # Calculate heading to target
         direction = current_wp - pos
         yaw = np.arctan2(direction[1], direction[0])
@@ -1088,6 +1093,7 @@ class DroneSimulationWindow(QMainWindow):
                         QImage.Format_RGB888).rgbSwapped()
         pixmap = QPixmap.fromImage(q_image)
         self.camera_label.setPixmap(pixmap)
+        """
 
 
 def main():
