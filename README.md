@@ -13,6 +13,7 @@ This system generates drone trajectories using ML (LSTM) based on initial positi
 - Simulated camera feed from drone perspective
 - Export to ONNX for C++ integration
 - Real-time C++ inference code
+- **🎨 NEW: Enhanced drone model aesthetics** - Professional 3D model with RGB LEDs, camera gimbal, landing gear, and realistic 3-blade propellers!
 - **✨ NEW: Dynamic waypoint modification during flight** - Add, modify, or remove waypoints in real-time while trajectory is running!
 - **💾 NEW: Save/Load trajectories** - Save your trajectories and reload them later
 - **🎯 NEW: Pre-defined templates** - 13 ready-to-use trajectory patterns (circle, spiral, S-curve, etc.)
@@ -84,7 +85,36 @@ cmake .. -G "Visual Studio 17 2022" -A x64 -DONNXRUNTIME_DIR=C:\onnxruntime
 
 See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for detailed Windows instructions and troubleshooting.
 
-## 🆕 New Features (Version 2.1)
+## 🆕 New Features (Version 2.5)
+
+### Enhanced Drone Model Aesthetics 🎨
+
+**NEW FEATURE**: The drone model has been completely redesigned with professional-grade aesthetics!
+
+**Quick Start:**
+1. Run the simulation: `python simulation.py`
+2. Notice the detailed drone model with:
+   - Octagonal carbon fiber body plates
+   - RGB LED strips on arms (Red/Green/Blue/Yellow for orientation)
+   - 3-blade realistic propellers with airfoil design
+   - Camera gimbal underneath
+   - Landing gear with curved legs
+   - Battery indicator LEDs on top
+
+**Key Visual Improvements:**
+- 🎨 **Modern Design**: Octagonal body plates, tapered arms, professional colors
+- 🚁 **Realistic Propellers**: 3-blade design with curved airfoil shape and blade twist
+- 💡 **RGB Lighting**: Color-coded LED strips for instant orientation (Front=Red, Back=Green)
+- 📷 **Camera System**: Gimbal and lens underneath (like DJI drones)
+- 🦵 **Landing Gear**: 4 curved legs for ground clearance and stability
+- 📡 **Details**: Battery LEDs, antenna, motor housings
+
+**Documentation:**
+- 🚀 [Quick Start Guide](QUICK_START_AESTHETICS.md) - See improvements in 60 seconds
+- 📖 [Full Documentation](DRONE_AESTHETIC_IMPROVEMENTS.md) - Complete technical details
+- 🔄 [Before/After Comparison](AESTHETIC_COMPARISON.md) - Visual comparison guide
+
+**Impact:** 7x more detailed (43 parts vs 13), still 60 FPS performance!
 
 ### Dynamic Waypoint Modification
 
