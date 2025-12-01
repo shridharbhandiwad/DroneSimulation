@@ -1452,7 +1452,7 @@ class DroneSimulationWindow(QMainWindow):
         if self.current_theme == 'white':
             drone_color = '#3399db'  # Medium blue for white theme
         else:
-            drone_color = '#b3e6ff'  # Bright cyan for black theme
+            drone_color = '#ffffff'  # Pure white for black theme
         
         legend_text = f"""<b>Legend:</b><br>
 <span style='color: {drone_color};'>●</span> <b>Drone</b><br>
@@ -1588,41 +1588,41 @@ class DroneSimulationWindow(QMainWindow):
                     color=(0.4, 0.9, 0.4, 0.95)  # Brighter green
                 )
             
-            # Drone body hub - very bright cyan/white for maximum visibility on dark background
+            # Drone body hub - pure white for maximum visibility on dark background
             if hasattr(self, 'drone_body'):
-                self.drone_body.setColor((0.7, 0.9, 1.0, 1.0))
+                self.drone_body.setColor((1.0, 1.0, 1.0, 1.0))
             
-            # Drone body plates - bright silver/white for visibility on dark background
+            # Drone body plates - pure white for visibility on dark background
             if hasattr(self, 'drone_body_top'):
-                self.drone_body_top.setColor((0.75, 0.85, 0.95, 1.0))  # Bright silver-blue
+                self.drone_body_top.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
             if hasattr(self, 'drone_body_bottom'):
-                self.drone_body_bottom.setColor((0.70, 0.80, 0.92, 1.0))  # Slightly darker silver-blue
+                self.drone_body_bottom.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
             
-            # Drone arms - bright for visibility
+            # Drone arms - pure white for visibility
             if hasattr(self, 'drone_arms'):
                 for arm, pos in self.drone_arms:
-                    arm.setColor((0.65, 0.75, 0.85, 1.0))  # Bright gray-blue
+                    arm.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
             
-            # Motor housings - bright
+            # Motor housings - pure white
             if hasattr(self, 'motor_housings'):
                 for motor, pos in self.motor_housings:
-                    motor.setColor((0.70, 0.78, 0.88, 1.0))  # Bright silver
+                    motor.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
             
-            # Landing gear - bright for visibility
+            # Landing gear - pure white for visibility
             if hasattr(self, 'landing_gear'):
                 for leg, pos in self.landing_gear:
-                    leg.setColor((0.65, 0.72, 0.82, 1.0))  # Bright gray
+                    leg.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
             
-            # Propellers - bright translucent for visibility
+            # Propellers - pure white translucent for visibility
             if hasattr(self, 'propellers'):
                 for prop_dict in self.propellers:
                     for key in ['blade1', 'blade2', 'blade3']:
                         if key in prop_dict:
-                            prop_dict[key].setColor((0.60, 0.70, 0.85, 0.85))  # Bright translucent
+                            prop_dict[key].setColor((1.0, 1.0, 1.0, 0.85))  # Pure white translucent
             
-            # Gimbal - bright for visibility
+            # Gimbal - pure white for visibility
             if hasattr(self, 'gimbal'):
-                self.gimbal.setColor((0.60, 0.68, 0.78, 1.0))  # Bright gray
+                self.gimbal.setColor((1.0, 1.0, 1.0, 1.0))  # Pure white
     
     def apply_stylesheet(self):
         """Apply theme-appropriate stylesheet to the application"""
