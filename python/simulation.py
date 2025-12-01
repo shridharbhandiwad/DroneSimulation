@@ -22,6 +22,92 @@ from trajectory_templates import TrajectoryTemplates
 import os
 
 
+class PannableGLViewWidget(gl.GLViewWidget):
+    """Custom GLViewWidget with right mouse button pan control"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pan_enabled = False
+        self.last_pan_pos = None
+        self.custom_mouse_press_handler = None
+        self.click_mode_callback = None  # Function to check if click mode is enabled
+    
+    def mousePressEvent(self, ev):
+        """Handle mouse press events for panning and custom handlers"""
+        if ev.button() == Qt.RightButton:
+            # Enable panning with right mouse button
+            self.pan_enabled = True
+            self.last_pan_pos = ev.pos()
+            ev.accept()
+        elif ev.button() == Qt.LeftButton:
+            # Check if click mode is enabled
+            click_mode_active = False
+            if self.click_mode_callback is not None:
+                click_mode_active = self.click_mode_callback()
+            
+            # If click mode is active, call custom handler
+            if click_mode_active and self.custom_mouse_press_handler is not None:
+                self.custom_mouse_press_handler(ev)
+                # Don't call parent to prevent rotation when adding waypoints
+            else:
+                # Default behavior (rotation with left mouse)
+                super().mousePressEvent(ev)
+        else:
+            # Default behavior for other buttons
+            super().mousePressEvent(ev)
+    
+    def mouseMoveEvent(self, ev):
+        """Handle mouse move events for panning"""
+        if self.pan_enabled and self.last_pan_pos is not None:
+            # Calculate delta movement
+            delta = ev.pos() - self.last_pan_pos
+            self.last_pan_pos = ev.pos()
+            
+            # Get current camera parameters
+            center = self.opts['center']
+            distance = self.opts['distance']
+            
+            # Calculate pan speed based on camera distance
+            pan_speed = distance * 0.001
+            
+            # Get camera orientation
+            elev = np.radians(self.opts['elevation'])
+            azim = np.radians(self.opts['azimuth'])
+            
+            # Calculate camera right and up vectors
+            # Right vector (perpendicular to view direction in XY plane)
+            right_x = -np.sin(azim)
+            right_y = np.cos(azim)
+            
+            # Up vector (perpendicular to view direction and right vector)
+            up_x = -np.cos(azim) * np.sin(elev)
+            up_y = -np.sin(azim) * np.sin(elev)
+            up_z = np.cos(elev)
+            
+            # Update center position
+            new_center = center.copy() if hasattr(center, 'copy') else np.array(center)
+            new_center[0] += (right_x * delta.x() + up_x * delta.y()) * pan_speed
+            new_center[1] += (right_y * delta.x() + up_y * delta.y()) * pan_speed
+            new_center[2] += up_z * delta.y() * pan_speed
+            
+            # Apply new center
+            self.opts['center'] = new_center
+            self.update()
+            ev.accept()
+        else:
+            # Default behavior (rotation with left mouse)
+            super().mouseMoveEvent(ev)
+    
+    def mouseReleaseEvent(self, ev):
+        """Handle mouse release events"""
+        if ev.button() == Qt.RightButton:
+            self.pan_enabled = False
+            self.last_pan_pos = None
+            ev.accept()
+        else:
+            super().mouseReleaseEvent(ev)
+
+
 class CameraSimulator:
     """Simulate camera feed from drone perspective"""
     
@@ -891,7 +977,7 @@ class DroneSimulationWindow(QMainWindow):
         stack_layout = QStackedLayout(view_stack)
         stack_layout.setStackingMode(QStackedLayout.StackAll)
         
-        self.plot_widget = gl.GLViewWidget()
+        self.plot_widget = PannableGLViewWidget()
         self.plot_widget.setMinimumSize(900, 580)
         self.plot_widget.setCameraPosition(distance=100)
         self.plot_widget.setBackgroundColor('#ffffff')
@@ -2237,8 +2323,9 @@ class DroneSimulationWindow(QMainWindow):
         self.animation_timer.timeout.connect(self.update_animations)
         self.animation_timer.start(50)  # 20 FPS for animations
         
-        # Connect mouse events
-        self.plot_widget.mousePressEvent = self.on_3d_click
+        # Connect mouse events - set custom handler for waypoint clicking
+        self.plot_widget.custom_mouse_press_handler = self.on_3d_click
+        self.plot_widget.click_mode_callback = lambda: self.click_mode_enabled
         
         # Apply initial theme colors to 3D scene
         self.apply_theme_to_3d_scene()
@@ -2981,36 +3068,39 @@ class DroneSimulationWindow(QMainWindow):
     
     def on_3d_click(self, event):
         """Handle clicks on the 3D view to add waypoints"""
-        if not self.click_mode_enabled:
+        # Only handle left button clicks when click mode is enabled
+        if not self.click_mode_enabled or event.button() != Qt.LeftButton:
             return
         
-        # Get the click position
-        if event.button() == Qt.LeftButton:
-            # Get the position in 3D space
-            # We'll project the click onto the ground plane (z = click_height)
-            pos = event.pos()
-            
-            # Use the camera's view matrix to unproject
-            # For simplicity, we'll map screen coordinates to world XY plane
-            # This is an approximation
-            view_width = self.plot_widget.width()
-            view_height = self.plot_widget.height()
-            
-            # Normalize screen coordinates (-1 to 1)
-            x_norm = (pos.x() / view_width - 0.5) * 2
-            y_norm = -(pos.y() / view_height - 0.5) * 2
-            
-            # Get camera distance and apply scaling
-            camera_dist = self.plot_widget.opts['distance']
-            scale = camera_dist / 2.0
-            
-            # Calculate world position
-            x_world = x_norm * scale
-            y_world = y_norm * scale
-            z_world = self.click_height
-            
-            waypoint = np.array([x_world, y_world, z_world])
-            self.add_waypoint(waypoint)
+        # Get the position in 3D space
+        # We'll project the click onto the ground plane (z = click_height)
+        pos = event.pos()
+        
+        # Use the camera's view matrix to unproject
+        # For simplicity, we'll map screen coordinates to world XY plane
+        # This is an approximation
+        view_width = self.plot_widget.width()
+        view_height = self.plot_widget.height()
+        
+        # Normalize screen coordinates (-1 to 1)
+        x_norm = (pos.x() / view_width - 0.5) * 2
+        y_norm = -(pos.y() / view_height - 0.5) * 2
+        
+        # Get camera distance and apply scaling
+        camera_dist = self.plot_widget.opts['distance']
+        scale = camera_dist / 2.0
+        
+        # Calculate world position accounting for camera center
+        center = self.plot_widget.opts['center']
+        x_world = center[0] + x_norm * scale
+        y_world = center[1] + y_norm * scale
+        z_world = self.click_height
+        
+        waypoint = np.array([x_world, y_world, z_world])
+        self.add_waypoint(waypoint)
+        
+        # Accept the event to prevent propagation to rotation handler
+        event.accept()
     
     def toggle_click_mode(self, state):
         """Toggle click-to-add-waypoint mode"""
