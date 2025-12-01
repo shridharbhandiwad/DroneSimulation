@@ -2201,18 +2201,54 @@ class DroneSimulationWindow(QMainWindow):
     
     def create_drone_model(self):
         """Create a 3D drone model with body, arms, and propellers"""
-        # Drone body (center sphere) - theme-compliant blue
-        md = gl.MeshData.sphere(rows=10, cols=10, radius=0.8)
-        self.drone_body = gl.GLMeshItem(
-            meshdata=md,
-            color=(0.20, 0.60, 0.86, 1.0),  # Modern blue - theme-compliant
+        # Main body - top plate (octagonal for modern look)
+        top_plate = self.create_octagonal_plate(radius=1.0, thickness=0.1)
+        self.drone_body_top = gl.GLMeshItem(
+            meshdata=top_plate,
+            color=(0.15, 0.15, 0.18, 1.0),  # Dark carbon fiber look
             smooth=True,
             shader='shaded',
             glOptions='opaque'
         )
-        self.plot_widget.addItem(self.drone_body)
+        self.plot_widget.addItem(self.drone_body_top)
         
-        # Drone arms (4 cylinders extending from center)
+        # Bottom plate (slightly smaller)
+        bottom_plate = self.create_octagonal_plate(radius=0.85, thickness=0.08)
+        self.drone_body_bottom = gl.GLMeshItem(
+            meshdata=bottom_plate,
+            color=(0.12, 0.12, 0.15, 1.0),  # Slightly darker
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.drone_body_bottom)
+        
+        # Central hub (rounded cylinder connecting plates)
+        hub = gl.MeshData.cylinder(rows=10, cols=20, radius=[0.5, 0.5], length=0.4)
+        self.drone_hub = gl.GLMeshItem(
+            meshdata=hub,
+            color=(0.20, 0.60, 0.86, 1.0),  # Modern blue accent
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.drone_hub)
+        
+        # Battery indicator LEDs on top
+        self.battery_leds = []
+        for i in range(4):
+            led = gl.MeshData.sphere(rows=6, cols=6, radius=0.08)
+            led_item = gl.GLMeshItem(
+                meshdata=led,
+                color=(0.0, 1.0, 0.3, 1.0),  # Green LEDs
+                smooth=True,
+                shader='shaded',
+                glOptions='opaque'
+            )
+            self.plot_widget.addItem(led_item)
+            self.battery_leds.append(led_item)
+        
+        # Drone arms (4 modern angular arms)
         self.drone_arms = []
         arm_positions = [
             (1, 0, 0),   # Front
@@ -2222,11 +2258,11 @@ class DroneSimulationWindow(QMainWindow):
         ]
         
         for pos in arm_positions:
-            # Create arm mesh
-            arm_mesh = self.create_cylinder_mesh(length=2.0, radius=0.15)
+            # Create modern arm mesh (rectangular with taper)
+            arm_mesh = self.create_tapered_arm(length=2.2, width=0.25, height=0.15)
             arm = gl.GLMeshItem(
                 meshdata=arm_mesh,
-                color=(0.3, 0.3, 0.3, 1.0),
+                color=(0.18, 0.18, 0.20, 1.0),  # Dark gray
                 smooth=True,
                 shader='shaded',
                 glOptions='opaque'
@@ -2234,23 +2270,112 @@ class DroneSimulationWindow(QMainWindow):
             self.drone_arms.append((arm, pos))
             self.plot_widget.addItem(arm)
         
-        # Propellers (4 sets of 2 blades each)
+        # Motor housings (at end of each arm)
+        self.motor_housings = []
+        for pos in arm_positions:
+            motor = gl.MeshData.cylinder(rows=10, cols=20, radius=[0.35, 0.35], length=0.4)
+            motor_item = gl.GLMeshItem(
+                meshdata=motor,
+                color=(0.25, 0.25, 0.28, 1.0),  # Slightly lighter gray
+                smooth=True,
+                shader='shaded',
+                glOptions='opaque'
+            )
+            self.plot_widget.addItem(motor_item)
+            self.motor_housings.append((motor_item, pos))
+        
+        # LED strips on arms (RGB accent lights)
+        self.arm_leds = []
+        colors = [
+            (1.0, 0.0, 0.0, 0.9),  # Front - Red
+            (0.0, 1.0, 0.0, 0.9),  # Back - Green
+            (0.0, 0.5, 1.0, 0.9),  # Right - Blue
+            (1.0, 1.0, 0.0, 0.9)   # Left - Yellow
+        ]
+        for i, pos in enumerate(arm_positions):
+            led = self.create_led_strip(length=1.8, width=0.15, height=0.05)
+            led_item = gl.GLMeshItem(
+                meshdata=led,
+                color=colors[i],
+                smooth=True,
+                shader='shaded',
+                glOptions='translucent'
+            )
+            self.plot_widget.addItem(led_item)
+            self.arm_leds.append((led_item, pos))
+        
+        # Camera gimbal (underneath center)
+        gimbal_body = gl.MeshData.sphere(rows=10, cols=10, radius=0.35)
+        self.gimbal = gl.GLMeshItem(
+            meshdata=gimbal_body,
+            color=(0.1, 0.1, 0.12, 1.0),  # Very dark
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.gimbal)
+        
+        # Camera lens (front of gimbal)
+        lens = gl.MeshData.cylinder(rows=8, cols=16, radius=[0.15, 0.15], length=0.2)
+        self.camera_lens = gl.GLMeshItem(
+            meshdata=lens,
+            color=(0.05, 0.05, 0.08, 1.0),  # Almost black
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.camera_lens)
+        
+        # Landing gear (4 legs)
+        self.landing_gear = []
+        for pos in arm_positions:
+            leg = self.create_landing_leg(length=0.8, radius=0.08)
+            leg_item = gl.GLMeshItem(
+                meshdata=leg,
+                color=(0.15, 0.15, 0.17, 1.0),
+                smooth=True,
+                shader='shaded',
+                glOptions='opaque'
+            )
+            self.plot_widget.addItem(leg_item)
+            self.landing_gear.append((leg_item, pos))
+        
+        # Antenna (on top)
+        antenna = gl.MeshData.cylinder(rows=4, cols=8, radius=[0.03, 0.02], length=0.6)
+        self.antenna = gl.GLMeshItem(
+            meshdata=antenna,
+            color=(0.8, 0.8, 0.85, 1.0),  # Metallic silver
+            smooth=True,
+            shader='shaded',
+            glOptions='opaque'
+        )
+        self.plot_widget.addItem(self.antenna)
+        
+        # Propellers (4 sets of 3 blades each for more realism)
         self.propellers = []
         for pos in arm_positions:
-            # Two blades per propeller
-            blade1 = self.create_propeller_blade()
-            blade2 = self.create_propeller_blade()
+            # Three blades per propeller
+            blade1 = self.create_curved_propeller_blade()
+            blade2 = self.create_curved_propeller_blade()
+            blade3 = self.create_curved_propeller_blade()
             
             blade1_item = gl.GLMeshItem(
                 meshdata=blade1,
-                color=(0.1, 0.1, 0.1, 0.9),
+                color=(0.08, 0.08, 0.10, 0.85),  # Dark translucent
                 smooth=True,
                 shader='shaded',
                 glOptions='translucent'
             )
             blade2_item = gl.GLMeshItem(
                 meshdata=blade2,
-                color=(0.1, 0.1, 0.1, 0.9),
+                color=(0.08, 0.08, 0.10, 0.85),
+                smooth=True,
+                shader='shaded',
+                glOptions='translucent'
+            )
+            blade3_item = gl.GLMeshItem(
+                meshdata=blade3,
+                color=(0.08, 0.08, 0.10, 0.85),
                 smooth=True,
                 shader='shaded',
                 glOptions='translucent'
@@ -2258,11 +2383,25 @@ class DroneSimulationWindow(QMainWindow):
             
             self.plot_widget.addItem(blade1_item)
             self.plot_widget.addItem(blade2_item)
+            self.plot_widget.addItem(blade3_item)
+            
+            # Propeller hub (center)
+            hub = gl.MeshData.sphere(rows=6, cols=6, radius=0.12)
+            hub_item = gl.GLMeshItem(
+                meshdata=hub,
+                color=(0.15, 0.15, 0.18, 1.0),
+                smooth=True,
+                shader='shaded',
+                glOptions='opaque'
+            )
+            self.plot_widget.addItem(hub_item)
             
             # Store blade items with their position
             self.propellers.append({
                 'blade1': blade1_item,
                 'blade2': blade2_item,
+                'blade3': blade3_item,
+                'hub': hub_item,
                 'position': pos
             })
     
@@ -2336,13 +2475,222 @@ class DroneSimulationWindow(QMainWindow):
         md = gl.MeshData(vertexes=verts, faces=faces)
         return md
     
+    def create_octagonal_plate(self, radius=1.0, thickness=0.1):
+        """Create an octagonal plate for drone body"""
+        verts = []
+        faces = []
+        
+        # Top octagon
+        for i in range(8):
+            angle = 2 * np.pi * i / 8
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            verts.append([x, y, thickness/2])
+        
+        # Bottom octagon
+        for i in range(8):
+            angle = 2 * np.pi * i / 8
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            verts.append([x, y, -thickness/2])
+        
+        # Top cap (triangles from center)
+        center_top = len(verts)
+        verts.append([0, 0, thickness/2])
+        for i in range(8):
+            next_i = (i + 1) % 8
+            faces.append([center_top, i, next_i])
+        
+        # Bottom cap
+        center_bottom = len(verts)
+        verts.append([0, 0, -thickness/2])
+        for i in range(8):
+            next_i = (i + 1) % 8
+            faces.append([center_bottom, next_i + 8, i + 8])
+        
+        # Sides
+        for i in range(8):
+            next_i = (i + 1) % 8
+            faces.append([i, next_i, next_i + 8])
+            faces.append([i, next_i + 8, i + 8])
+        
+        verts = np.array(verts)
+        faces = np.array(faces)
+        
+        return gl.MeshData(vertexes=verts, faces=faces)
+    
+    def create_tapered_arm(self, length=2.2, width=0.25, height=0.15):
+        """Create a tapered rectangular arm"""
+        half_w = width / 2
+        half_h = height / 2
+        
+        # Wider at base, narrower at tip
+        base_w = half_w
+        tip_w = half_w * 0.6
+        
+        verts = np.array([
+            # Base (near body) - 4 corners
+            [-length/8, -base_w, half_h],
+            [-length/8, base_w, half_h],
+            [-length/8, base_w, -half_h],
+            [-length/8, -base_w, -half_h],
+            # Tip (motor end) - 4 corners
+            [length*7/8, -tip_w, half_h],
+            [length*7/8, tip_w, half_h],
+            [length*7/8, tip_w, -half_h],
+            [length*7/8, -tip_w, -half_h],
+        ])
+        
+        faces = np.array([
+            # Top face
+            [0, 1, 5], [0, 5, 4],
+            # Bottom face
+            [3, 7, 6], [3, 6, 2],
+            # Front face
+            [1, 2, 6], [1, 6, 5],
+            # Back face
+            [0, 4, 7], [0, 7, 3],
+            # Left face
+            [0, 3, 2], [0, 2, 1],
+            # Right face
+            [4, 5, 6], [4, 6, 7],
+        ])
+        
+        return gl.MeshData(vertexes=verts, faces=faces)
+    
+    def create_led_strip(self, length=1.8, width=0.15, height=0.05):
+        """Create an LED strip for arm lighting"""
+        half_w = width / 2
+        half_h = height / 2
+        
+        verts = np.array([
+            # Top surface
+            [0, -half_w, half_h],
+            [length, -half_w, half_h],
+            [length, half_w, half_h],
+            [0, half_w, half_h],
+            # Bottom surface
+            [0, -half_w, -half_h],
+            [length, -half_w, -half_h],
+            [length, half_w, -half_h],
+            [0, half_w, -half_h],
+        ])
+        
+        faces = np.array([
+            # Top
+            [0, 1, 2], [0, 2, 3],
+            # Bottom
+            [4, 6, 5], [4, 7, 6],
+            # Sides
+            [0, 4, 5], [0, 5, 1],
+            [1, 5, 6], [1, 6, 2],
+            [2, 6, 7], [2, 7, 3],
+            [3, 7, 4], [3, 4, 0],
+        ])
+        
+        return gl.MeshData(vertexes=verts, faces=faces)
+    
+    def create_landing_leg(self, length=0.8, radius=0.08):
+        """Create a curved landing leg"""
+        segments = 12
+        verts = []
+        faces = []
+        
+        # Create curved leg path
+        for i in range(segments):
+            t = i / (segments - 1)
+            # Curved path: starts vertical, curves outward
+            x = 0.3 * t  # Outward
+            y = 0
+            z = -length * t  # Downward
+            
+            # Create ring at this position
+            for j in range(8):
+                angle = 2 * np.pi * j / 8
+                vx = x + radius * np.cos(angle)
+                vy = y + radius * np.sin(angle)
+                verts.append([vx, vy, z])
+        
+        # Create faces between rings
+        for i in range(segments - 1):
+            for j in range(8):
+                next_j = (j + 1) % 8
+                v1 = i * 8 + j
+                v2 = i * 8 + next_j
+                v3 = (i + 1) * 8 + next_j
+                v4 = (i + 1) * 8 + j
+                faces.append([v1, v2, v3])
+                faces.append([v1, v3, v4])
+        
+        verts = np.array(verts)
+        faces = np.array(faces)
+        
+        return gl.MeshData(vertexes=verts, faces=faces)
+    
+    def create_curved_propeller_blade(self):
+        """Create a curved propeller blade with realistic airfoil shape"""
+        # More realistic blade with airfoil cross-section
+        segments = 10
+        verts = []
+        faces = []
+        
+        for i in range(segments):
+            t = i / (segments - 1)
+            # Blade spans from hub to tip
+            x = -0.05 + 1.3 * t  # Blade length
+            
+            # Width tapers from hub to tip
+            width = 0.2 * (1.0 - 0.7 * t)
+            
+            # Airfoil thickness (thicker at root, thinner at tip)
+            thick_top = 0.08 * (1.0 - 0.8 * t)
+            thick_bottom = 0.03 * (1.0 - 0.8 * t)
+            
+            # Twist angle (more pitch at hub, less at tip)
+            twist = 0.15 * (1.0 - t)
+            
+            # Top surface vertex
+            verts.append([x, -width, thick_top * np.cos(twist)])
+            # Bottom surface vertex
+            verts.append([x, -width, -thick_bottom * np.cos(twist)])
+            # Top surface vertex (other side)
+            verts.append([x, width, thick_top * np.cos(twist)])
+            # Bottom surface vertex (other side)
+            verts.append([x, width, -thick_bottom * np.cos(twist)])
+        
+        # Create faces
+        for i in range(segments - 1):
+            base = i * 4
+            next_base = (i + 1) * 4
+            
+            # Top surface
+            faces.append([base, base + 2, next_base + 2])
+            faces.append([base, next_base + 2, next_base])
+            
+            # Bottom surface
+            faces.append([base + 1, next_base + 3, base + 3])
+            faces.append([base + 1, next_base + 1, next_base + 3])
+            
+            # Leading edge
+            faces.append([base, base + 1, next_base + 1])
+            faces.append([base, next_base + 1, next_base])
+            
+            # Trailing edge
+            faces.append([base + 2, next_base + 2, next_base + 3])
+            faces.append([base + 2, next_base + 3, base + 3])
+        
+        # Tip cap
+        last_base = (segments - 1) * 4
+        faces.append([last_base, last_base + 2, last_base + 3])
+        faces.append([last_base, last_base + 3, last_base + 1])
+        
+        verts = np.array(verts)
+        faces = np.array(faces)
+        
+        return gl.MeshData(vertexes=verts, faces=faces)
+    
     def update_drone_model_position(self, position, velocity):
         """Update drone model position and orientation"""
-        # Update body position
-        transform = np.eye(4)
-        transform[:3, 3] = position
-        self.drone_body.setTransform(transform)
-        
         # Calculate orientation from velocity
         if np.linalg.norm(velocity) > 0.1:
             # Yaw angle (rotation around Z axis)
@@ -2355,14 +2703,37 @@ class DroneSimulationWindow(QMainWindow):
             yaw = 0
             pitch = 0
         
+        # Update body plates - top plate
+        transform_top = np.eye(4)
+        transform_top[:3, 3] = [position[0], position[1], position[2] + 0.2]
+        self.drone_body_top.setTransform(transform_top)
+        
+        # Update body plates - bottom plate
+        transform_bottom = np.eye(4)
+        transform_bottom[:3, 3] = [position[0], position[1], position[2] - 0.15]
+        self.drone_body_bottom.setTransform(transform_bottom)
+        
+        # Update central hub
+        hub_transform = np.eye(4)
+        hub_transform[:3, 3] = position
+        self.drone_hub.setTransform(hub_transform)
+        
+        # Update battery LEDs on top (arranged in a row)
+        led_spacing = 0.3
+        for i, led in enumerate(self.battery_leds):
+            led_transform = np.eye(4)
+            offset_x = (i - 1.5) * led_spacing
+            led_transform[:3, 3] = [position[0] + offset_x, position[1], position[2] + 0.35]
+            led.setTransform(led_transform)
+        
         # Update arms
         for arm, arm_pos in self.drone_arms:
             # Rotate arm position based on yaw
             angle = np.arctan2(arm_pos[1], arm_pos[0])
             rotated_angle = angle + yaw
             
-            arm_world_x = position[0] + 1.5 * np.cos(rotated_angle)
-            arm_world_y = position[1] + 1.5 * np.sin(rotated_angle)
+            arm_world_x = position[0] + 0.5 * np.cos(rotated_angle)
+            arm_world_y = position[1] + 0.5 * np.sin(rotated_angle)
             arm_world_z = position[2]
             
             # Create transformation matrix for arm
@@ -2381,21 +2752,93 @@ class DroneSimulationWindow(QMainWindow):
             
             arm.setTransform(arm_transform)
         
-        # Update propellers with rotation
-        self.propeller_rotation += 30.0  # Degrees per frame
+        # Update motor housings (at end of arms)
+        for motor, motor_pos in self.motor_housings:
+            angle = np.arctan2(motor_pos[1], motor_pos[0])
+            rotated_angle = angle + yaw
+            
+            motor_world_x = position[0] + 2.4 * np.cos(rotated_angle)
+            motor_world_y = position[1] + 2.4 * np.sin(rotated_angle)
+            motor_world_z = position[2]
+            
+            motor_transform = np.eye(4)
+            motor_transform[:3, 3] = [motor_world_x, motor_world_y, motor_world_z]
+            motor.setTransform(motor_transform)
+        
+        # Update LED strips on arms
+        for led, led_pos in self.arm_leds:
+            angle = np.arctan2(led_pos[1], led_pos[0])
+            rotated_angle = angle + yaw
+            
+            led_world_x = position[0] + 0.7 * np.cos(rotated_angle)
+            led_world_y = position[1] + 0.7 * np.sin(rotated_angle)
+            led_world_z = position[2] + 0.05
+            
+            led_transform = np.eye(4)
+            # Rotation
+            c = np.cos(rotated_angle)
+            s = np.sin(rotated_angle)
+            led_transform[0, 0] = c
+            led_transform[0, 1] = -s
+            led_transform[1, 0] = s
+            led_transform[1, 1] = c
+            # Position
+            led_transform[:3, 3] = [led_world_x, led_world_y, led_world_z]
+            led.setTransform(led_transform)
+        
+        # Update camera gimbal (underneath center, tilts with velocity)
+        gimbal_transform = np.eye(4)
+        gimbal_transform[:3, 3] = [position[0], position[1], position[2] - 0.5]
+        self.gimbal.setTransform(gimbal_transform)
+        
+        # Update camera lens (points forward, tilts down slightly)
+        lens_transform = np.eye(4)
+        # Rotate to point forward
+        lens_transform[0, 0] = 0
+        lens_transform[0, 1] = 1
+        lens_transform[1, 0] = -1
+        lens_transform[1, 1] = 0
+        lens_transform[:3, 3] = [position[0] + 0.25, position[1], position[2] - 0.5]
+        self.camera_lens.setTransform(lens_transform)
+        
+        # Update landing gear
+        for leg, leg_pos in self.landing_gear:
+            angle = np.arctan2(leg_pos[1], leg_pos[0])
+            rotated_angle = angle + yaw
+            
+            leg_world_x = position[0] + 0.8 * np.cos(rotated_angle)
+            leg_world_y = position[1] + 0.8 * np.sin(rotated_angle)
+            leg_world_z = position[2] - 0.2
+            
+            leg_transform = np.eye(4)
+            leg_transform[:3, 3] = [leg_world_x, leg_world_y, leg_world_z]
+            leg.setTransform(leg_transform)
+        
+        # Update antenna (on top)
+        antenna_transform = np.eye(4)
+        antenna_transform[:3, 3] = [position[0], position[1], position[2] + 0.35]
+        self.antenna.setTransform(antenna_transform)
+        
+        # Update propellers with rotation (faster for more realism)
+        self.propeller_rotation += 45.0  # Degrees per frame (faster spin)
         if self.propeller_rotation > 360:
             self.propeller_rotation -= 360
         
         for i, prop in enumerate(self.propellers):
             arm_pos = prop['position']
             
-            # Calculate propeller world position
+            # Calculate propeller world position (at motor location)
             angle = np.arctan2(arm_pos[1], arm_pos[0])
             rotated_angle = angle + yaw
             
-            prop_world_x = position[0] + 2.5 * np.cos(rotated_angle)
-            prop_world_y = position[1] + 2.5 * np.sin(rotated_angle)
-            prop_world_z = position[2]
+            prop_world_x = position[0] + 2.4 * np.cos(rotated_angle)
+            prop_world_y = position[1] + 2.4 * np.sin(rotated_angle)
+            prop_world_z = position[2] + 0.25
+            
+            # Propeller hub
+            hub_transform = np.eye(4)
+            hub_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
+            prop['hub'].setTransform(hub_transform)
             
             # Blade 1 rotation
             blade1_transform = np.eye(4)
@@ -2409,9 +2852,9 @@ class DroneSimulationWindow(QMainWindow):
             blade1_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
             prop['blade1'].setTransform(blade1_transform)
             
-            # Blade 2 rotation (90 degrees offset)
+            # Blade 2 rotation (120 degrees offset for 3-blade prop)
             blade2_transform = np.eye(4)
-            rot_angle2 = np.radians(self.propeller_rotation + 90)
+            rot_angle2 = np.radians(self.propeller_rotation + 120)
             c2 = np.cos(rot_angle2)
             s2 = np.sin(rot_angle2)
             blade2_transform[0, 0] = c2
@@ -2420,6 +2863,18 @@ class DroneSimulationWindow(QMainWindow):
             blade2_transform[1, 1] = c2
             blade2_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
             prop['blade2'].setTransform(blade2_transform)
+            
+            # Blade 3 rotation (240 degrees offset)
+            blade3_transform = np.eye(4)
+            rot_angle3 = np.radians(self.propeller_rotation + 240)
+            c3 = np.cos(rot_angle3)
+            s3 = np.sin(rot_angle3)
+            blade3_transform[0, 0] = c3
+            blade3_transform[0, 1] = -s3
+            blade3_transform[1, 0] = s3
+            blade3_transform[1, 1] = c3
+            blade3_transform[:3, 3] = [prop_world_x, prop_world_y, prop_world_z]
+            prop['blade3'].setTransform(blade3_transform)
     
     def update_animations(self):
         """Update animated elements like pulsing markers - theme-compliant"""
