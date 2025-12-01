@@ -1538,9 +1538,10 @@ class DroneSimulationWindow(QMainWindow):
             
             # Propellers - dark translucent for white theme
             if hasattr(self, 'propellers'):
-                for blades in self.propellers:
-                    for blade in blades:
-                        blade.setColor((0.08, 0.08, 0.10, 0.85))  # Dark translucent
+                for prop_dict in self.propellers:
+                    for key in ['blade1', 'blade2', 'blade3']:
+                        if key in prop_dict:
+                            prop_dict[key].setColor((0.08, 0.08, 0.10, 0.85))  # Dark translucent
             
             # Gimbal - dark for white theme
             if hasattr(self, 'gimbal'):
@@ -1614,9 +1615,10 @@ class DroneSimulationWindow(QMainWindow):
             
             # Propellers - bright translucent for visibility
             if hasattr(self, 'propellers'):
-                for blades in self.propellers:
-                    for blade in blades:
-                        blade.setColor((0.60, 0.70, 0.85, 0.85))  # Bright translucent
+                for prop_dict in self.propellers:
+                    for key in ['blade1', 'blade2', 'blade3']:
+                        if key in prop_dict:
+                            prop_dict[key].setColor((0.60, 0.70, 0.85, 0.85))  # Bright translucent
             
             # Gimbal - bright for visibility
             if hasattr(self, 'gimbal'):
