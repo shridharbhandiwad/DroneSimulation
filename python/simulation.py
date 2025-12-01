@@ -90,8 +90,8 @@ class PannableGLViewWidget(gl.GLViewWidget):
             new_center[1] += (right_y * delta.x() + up_y * delta.y()) * pan_speed
             new_center[2] += up_z * delta.y() * pan_speed
             
-            # Apply new center
-            self.opts['center'] = new_center
+            # Apply new center (convert to pg.Vector for pyqtgraph compatibility)
+            self.opts['center'] = pg.Vector(*new_center)
             self.update()
             ev.accept()
         else:
