@@ -1515,6 +1515,37 @@ class DroneSimulationWindow(QMainWindow):
             if hasattr(self, 'drone_body'):
                 self.drone_body.setColor((0.20, 0.60, 0.86, 1.0))
             
+            # Drone body plates - dark carbon fiber look for white theme
+            if hasattr(self, 'drone_body_top'):
+                self.drone_body_top.setColor((0.15, 0.15, 0.18, 1.0))
+            if hasattr(self, 'drone_body_bottom'):
+                self.drone_body_bottom.setColor((0.12, 0.12, 0.15, 1.0))
+            
+            # Drone arms - dark for white theme
+            if hasattr(self, 'drone_arms'):
+                for arm, pos in self.drone_arms:
+                    arm.setColor((0.18, 0.18, 0.20, 1.0))  # Dark gray
+            
+            # Motor housings - dark
+            if hasattr(self, 'motor_housings'):
+                for motor, pos in self.motor_housings:
+                    motor.setColor((0.25, 0.25, 0.28, 1.0))  # Slightly lighter gray
+            
+            # Landing gear - dark for white theme
+            if hasattr(self, 'landing_gear'):
+                for leg, pos in self.landing_gear:
+                    leg.setColor((0.15, 0.15, 0.17, 1.0))  # Dark
+            
+            # Propellers - dark translucent for white theme
+            if hasattr(self, 'propellers'):
+                for blades in self.propellers:
+                    for blade in blades:
+                        blade.setColor((0.08, 0.08, 0.10, 0.85))  # Dark translucent
+            
+            # Gimbal - dark for white theme
+            if hasattr(self, 'gimbal'):
+                self.gimbal.setColor((0.1, 0.1, 0.12, 1.0))  # Very dark
+            
         else:
             # Black theme colors - adjusted for dark background visibility
             
@@ -1556,9 +1587,40 @@ class DroneSimulationWindow(QMainWindow):
                     color=(0.4, 0.9, 0.4, 0.95)  # Brighter green
                 )
             
-            # Drone body - very bright cyan/white for maximum visibility on dark background
+            # Drone body hub - very bright cyan/white for maximum visibility on dark background
             if hasattr(self, 'drone_body'):
                 self.drone_body.setColor((0.7, 0.9, 1.0, 1.0))
+            
+            # Drone body plates - bright silver/white for visibility on dark background
+            if hasattr(self, 'drone_body_top'):
+                self.drone_body_top.setColor((0.75, 0.85, 0.95, 1.0))  # Bright silver-blue
+            if hasattr(self, 'drone_body_bottom'):
+                self.drone_body_bottom.setColor((0.70, 0.80, 0.92, 1.0))  # Slightly darker silver-blue
+            
+            # Drone arms - bright for visibility
+            if hasattr(self, 'drone_arms'):
+                for arm, pos in self.drone_arms:
+                    arm.setColor((0.65, 0.75, 0.85, 1.0))  # Bright gray-blue
+            
+            # Motor housings - bright
+            if hasattr(self, 'motor_housings'):
+                for motor, pos in self.motor_housings:
+                    motor.setColor((0.70, 0.78, 0.88, 1.0))  # Bright silver
+            
+            # Landing gear - bright for visibility
+            if hasattr(self, 'landing_gear'):
+                for leg, pos in self.landing_gear:
+                    leg.setColor((0.65, 0.72, 0.82, 1.0))  # Bright gray
+            
+            # Propellers - bright translucent for visibility
+            if hasattr(self, 'propellers'):
+                for blades in self.propellers:
+                    for blade in blades:
+                        blade.setColor((0.60, 0.70, 0.85, 0.85))  # Bright translucent
+            
+            # Gimbal - bright for visibility
+            if hasattr(self, 'gimbal'):
+                self.gimbal.setColor((0.60, 0.68, 0.78, 1.0))  # Bright gray
     
     def apply_stylesheet(self):
         """Apply theme-appropriate stylesheet to the application"""
