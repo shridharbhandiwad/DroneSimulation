@@ -905,26 +905,14 @@ class DroneSimulationWindow(QMainWindow):
         legend_layout.setContentsMargins(10, 10, 10, 10)
         legend_layout.setSpacing(0)
         
-        # Legend box
-        legend_box = QLabel()
-        legend_box.setObjectName("legendBox")
-        legend_box.setStyleSheet("")  # Will be styled by theme
-        legend_text = """<b>Legend:</b><br>
-<span style='color: #3399db;'>●</span> <b>Drone</b> (Blue)<br>
-<span style='color: #00cccc;'>●</span> <b>Trajectory WP</b> (Cyan)<br>
-<span style='color: #b933cc;'>●</span> <b>User WP</b> (Purple)<br>
-<span style='color: #33cc33;'>●</span> <b>Visited</b> (Green)<br>
-<span style='color: #ffc107;'>●</span> <b>Target</b> (Gold)<br>
-<span style='color: #ff7700;'>━</span> <b>Trail</b> (Orange)<br>
-<span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
-<br><b>Controls:</b><br>
-• Left Mouse: Rotate<br>
-• Right Mouse: Pan<br>
-• Scroll: Zoom"""
-        legend_box.setText(legend_text)
-        legend_box.setWordWrap(True)
-        legend_box.setMaximumWidth(250)
-        legend_layout.addWidget(legend_box, 0, Qt.AlignTop | Qt.AlignLeft)
+        # Legend box - store as instance variable for theme updates
+        self.legend_box = QLabel()
+        self.legend_box.setObjectName("legendBox")
+        self.legend_box.setStyleSheet("")  # Will be styled by theme
+        self.update_legend_text()  # Set initial legend text based on theme
+        self.legend_box.setWordWrap(True)
+        self.legend_box.setMaximumWidth(250)
+        legend_layout.addWidget(self.legend_box, 0, Qt.AlignTop | Qt.AlignLeft)
         
         stack_layout.addWidget(legend_widget)
         
@@ -1455,6 +1443,30 @@ class DroneSimulationWindow(QMainWindow):
         
         # Update waypoint labels with appropriate colors
         self.update_waypoint_labels()
+        
+        # Update legend with theme-appropriate drone color
+        self.update_legend_text()
+    
+    def update_legend_text(self):
+        """Update legend text with theme-appropriate colors"""
+        if self.current_theme == 'white':
+            drone_color = '#3399db'  # Medium blue for white theme
+        else:
+            drone_color = '#b3e6ff'  # Bright cyan for black theme
+        
+        legend_text = f"""<b>Legend:</b><br>
+<span style='color: {drone_color};'>●</span> <b>Drone</b><br>
+<span style='color: #00cccc;'>●</span> <b>Trajectory WP</b> (Cyan)<br>
+<span style='color: #b933cc;'>●</span> <b>User WP</b> (Purple)<br>
+<span style='color: #33cc33;'>●</span> <b>Visited</b> (Green)<br>
+<span style='color: #ffc107;'>●</span> <b>Target</b> (Gold)<br>
+<span style='color: #ff7700;'>━</span> <b>Trail</b> (Orange)<br>
+<span style='color: #4caf50;'>→</span> <b>Velocity</b> (Green)<br>
+<br><b>Controls:</b><br>
+• Left Mouse: Rotate<br>
+• Right Mouse: Pan<br>
+• Scroll: Zoom"""
+        self.legend_box.setText(legend_text)
     
     def apply_theme_to_3d_scene(self):
         """Apply theme-specific colors to all 3D scene elements"""
@@ -1544,9 +1556,9 @@ class DroneSimulationWindow(QMainWindow):
                     color=(0.4, 0.9, 0.4, 0.95)  # Brighter green
                 )
             
-            # Drone body - brighter blue for dark background
+            # Drone body - very bright cyan/white for maximum visibility on dark background
             if hasattr(self, 'drone_body'):
-                self.drone_body.setColor((0.35, 0.70, 0.95, 1.0))
+                self.drone_body.setColor((0.7, 0.9, 1.0, 1.0))
     
     def apply_stylesheet(self):
         """Apply theme-appropriate stylesheet to the application"""
@@ -2233,6 +2245,9 @@ class DroneSimulationWindow(QMainWindow):
             glOptions='opaque'
         )
         self.plot_widget.addItem(self.drone_hub)
+        
+        # Reference drone_body to the hub for theme color updates
+        self.drone_body = self.drone_hub
         
         # Battery indicator LEDs on top
         self.battery_leds = []
