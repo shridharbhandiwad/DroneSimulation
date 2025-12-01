@@ -14,6 +14,8 @@ This system generates drone trajectories using ML (LSTM) based on initial positi
 - Export to ONNX for C++ integration
 - Real-time C++ inference code
 - **✨ NEW: Dynamic waypoint modification during flight** - Add, modify, or remove waypoints in real-time while trajectory is running!
+- **💾 NEW: Save/Load trajectories** - Save your trajectories and reload them later
+- **🎯 NEW: Pre-defined templates** - 13 ready-to-use trajectory patterns (circle, spiral, S-curve, etc.)
 
 ## Architecture
 
@@ -82,12 +84,13 @@ cmake .. -G "Visual Studio 17 2022" -A x64 -DONNXRUNTIME_DIR=C:\onnxruntime
 
 See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for detailed Windows instructions and troubleshooting.
 
-## 🆕 Dynamic Waypoint Modification
+## 🆕 New Features (Version 2.1)
+
+### Dynamic Waypoint Modification
 
 **NEW FEATURE**: You can now add, modify, or remove waypoints while the drone is flying!
 
-### Quick Start for Dynamic Waypoints
-
+**Quick Start:**
 1. Run the simulation: `python simulation.py`
 2. Enable "🔄 Dynamic Waypoint Mode" in the GUI
 3. Add waypoints by clicking on the 3D view during flight
@@ -100,6 +103,29 @@ See [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) for detailed Windows instruct
 - 🧪 [Test Suite](python/test_dynamic_waypoints.py) - Working examples and validation
 
 **Performance:** ~3ms trajectory regeneration time (tested ✅)
+
+### Trajectory Save/Load & Templates 💾✨
+
+**NEW FEATURE**: Save your trajectories, load them later, and use pre-defined templates!
+
+**Quick Start:**
+1. Press `Ctrl+T` to load a template (circle, spiral, S-curve, etc.)
+2. Press `Ctrl+S` to save your current trajectory
+3. Press `Ctrl+O` to browse and load saved trajectories
+
+**Available Templates:** (13 patterns)
+- 🔵 Basic: Circle, Square, Figure-Eight
+- ⬆️ Vertical: Ascend, Descend
+- 🌀 Spirals: Ascending, Descending
+- ↩️ Turns: Sharp Right, Sharp Left
+- 〰️ Curves: S-Curve (horizontal/vertical), C-Curve (horizontal/vertical)
+
+**Documentation:**
+- 🚀 [Quick Start Guide](QUICK_START_TRAJECTORY_FEATURES.md) - Get started in 60 seconds
+- 📖 [Complete Guide](TRAJECTORY_MANAGEMENT_GUIDE.md) - Full API and usage guide
+- 🧪 [Test Suite](python/test_trajectory_features.py) - Validation and examples
+
+**Storage:** Trajectories saved as JSON in `saved_trajectories/` folder
 
 ## Usage
 
@@ -235,7 +261,10 @@ cmake --build . --config Release
 │   ├── train_model.py                 # Model training script
 │   ├── simulation.py                  # 3D PyQt5 visualization
 │   ├── export_to_onnx.py              # ONNX export utility
+│   ├── trajectory_templates.py        # 🆕 Pre-defined trajectory patterns
+│   ├── trajectory_storage.py          # 🆕 Save/load trajectory system
 │   ├── test_dynamic_waypoints.py      # 🆕 Dynamic waypoints test suite
+│   ├── test_trajectory_features.py    # 🆕 Templates & storage test suite
 │   └── utils.py                       # Helper functions
 ├── cpp/
 │   ├── drone_trajectory.h             # C++ header with waypoint management

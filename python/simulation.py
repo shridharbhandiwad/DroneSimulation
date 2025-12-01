@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QGridLayout, QLineEdit, QMessageBox, QListWidget, 
                              QListWidgetItem, QSplitter, QFrame, QCheckBox, QStackedLayout,
                              QMenuBar, QMenu, QAction, QDialog, QDialogButtonBox, QSpinBox,
-                             QDoubleSpinBox, QTextEdit, QScrollArea, QFormLayout, QComboBox)
+                             QDoubleSpinBox, QTextEdit, QScrollArea, QFormLayout, QComboBox,
+                             QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView)
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QFont, QColor, QPalette
 import pyqtgraph as pg
@@ -16,6 +17,8 @@ import pyqtgraph.opengl as gl
 import cv2
 from trajectory_generator import TrajectoryGenerator
 from ml_model import TrajectoryPredictor
+from trajectory_storage import TrajectoryStorage
+from trajectory_templates import TrajectoryTemplates
 import os
 
 
@@ -374,6 +377,407 @@ class WhatsNewDialog(QDialog):
         """
 
 
+class TemplateSelectionDialog(QDialog):
+    """Dialog for selecting and configuring trajectory templates"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Trajectory Templates")
+        self.setModal(True)
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(500)
+        
+        self.selected_waypoints = None
+        
+        layout = QVBoxLayout()
+        
+        # Title
+        title = QLabel("<h2>Select Trajectory Template</h2>")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Template list
+        list_label = QLabel("<b>Available Templates:</b>")
+        layout.addWidget(list_label)
+        
+        self.template_list = QListWidget()
+        self.template_list.setMinimumHeight(200)
+        
+        # Add templates with descriptions
+        templates = [
+            ("circle", "Circle - Circular trajectory"),
+            ("spiral_ascending", "Spiral (Ascending) - Upward spiral"),
+            ("spiral_descending", "Spiral (Descending) - Downward spiral"),
+            ("ascend", "Ascend - Vertical climb"),
+            ("descend", "Descend - Vertical descent"),
+            ("sharp_turn_right", "Sharp Turn (Right) - 90° right turn"),
+            ("sharp_turn_left", "Sharp Turn (Left) - 90° left turn"),
+            ("s_curve_horizontal", "S-Curve (Horizontal) - Sinusoidal path"),
+            ("s_curve_vertical", "S-Curve (Vertical) - Vertical sine wave"),
+            ("c_curve_horizontal", "C-Curve (Horizontal) - Arc trajectory"),
+            ("c_curve_vertical", "C-Curve (Vertical) - Vertical arc"),
+            ("figure_eight", "Figure-Eight - ∞ pattern"),
+            ("square", "Square - Rectangular path")
+        ]
+        
+        for template_id, description in templates:
+            item = QListWidgetItem(description)
+            item.setData(Qt.UserRole, template_id)
+            self.template_list.addItem(item)
+        
+        self.template_list.setCurrentRow(0)
+        self.template_list.currentItemChanged.connect(self.on_template_changed)
+        layout.addWidget(self.template_list)
+        
+        # Parameters section
+        params_label = QLabel("<b>Parameters:</b>")
+        layout.addWidget(params_label)
+        
+        params_form = QFormLayout()
+        
+        # Center position
+        center_layout = QHBoxLayout()
+        self.center_x = QDoubleSpinBox()
+        self.center_x.setRange(-100, 100)
+        self.center_x.setValue(0)
+        self.center_y = QDoubleSpinBox()
+        self.center_y.setRange(-100, 100)
+        self.center_y.setValue(0)
+        self.center_z = QDoubleSpinBox()
+        self.center_z.setRange(1, 100)
+        self.center_z.setValue(15)
+        center_layout.addWidget(QLabel("X:"))
+        center_layout.addWidget(self.center_x)
+        center_layout.addWidget(QLabel("Y:"))
+        center_layout.addWidget(self.center_y)
+        center_layout.addWidget(QLabel("Z:"))
+        center_layout.addWidget(self.center_z)
+        params_form.addRow("Center (m):", center_layout)
+        
+        # Size/radius
+        self.size_spin = QDoubleSpinBox()
+        self.size_spin.setRange(5, 100)
+        self.size_spin.setValue(20)
+        params_form.addRow("Size/Radius (m):", self.size_spin)
+        
+        # Speed
+        self.speed_spin = QDoubleSpinBox()
+        self.speed_spin.setRange(1, 50)
+        self.speed_spin.setValue(12)
+        params_form.addRow("Speed (m/s):", self.speed_spin)
+        
+        # Number of points
+        self.points_spin = QSpinBox()
+        self.points_spin.setRange(5, 100)
+        self.points_spin.setValue(20)
+        params_form.addRow("Number of Waypoints:", self.points_spin)
+        
+        layout.addLayout(params_form)
+        
+        # Description box
+        self.description_text = QTextEdit()
+        self.description_text.setReadOnly(True)
+        self.description_text.setMaximumHeight(100)
+        layout.addWidget(self.description_text)
+        
+        # Update description for first template
+        self.on_template_changed()
+        
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.generate_and_accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+    
+    def on_template_changed(self):
+        """Update description when template selection changes"""
+        current_item = self.template_list.currentItem()
+        if not current_item:
+            return
+        
+        template_id = current_item.data(Qt.UserRole)
+        
+        descriptions = {
+            'circle': "A circular trajectory around a center point. Perfect for orbit patterns.",
+            'spiral_ascending': "An ascending spiral that increases in radius and altitude. Great for gaining height while moving outward.",
+            'spiral_descending': "A descending spiral that decreases in radius and altitude. Useful for controlled descent.",
+            'ascend': "Straight vertical climb to gain altitude quickly.",
+            'descend': "Controlled vertical descent to lower altitude.",
+            'sharp_turn_right': "L-shaped path with a sharp 90° right turn. Good for testing agility.",
+            'sharp_turn_left': "L-shaped path with a sharp 90° left turn.",
+            's_curve_horizontal': "Sinusoidal wave pattern in horizontal plane. Tests smooth lateral control.",
+            's_curve_vertical': "Sinusoidal wave pattern with vertical oscillations.",
+            'c_curve_horizontal': "Partial circular arc (C-shape) in horizontal plane.",
+            'c_curve_vertical': "Partial circular arc (C-shape) in vertical plane.",
+            'figure_eight': "Figure-eight (∞) pattern. Complex trajectory for testing precision.",
+            'square': "Square/rectangular trajectory with four corners. Tests sharp direction changes."
+        }
+        
+        self.description_text.setPlainText(descriptions.get(template_id, ""))
+    
+    def generate_and_accept(self):
+        """Generate waypoints from selected template"""
+        current_item = self.template_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "No Selection", "Please select a template.")
+            return
+        
+        template_id = current_item.data(Qt.UserRole)
+        
+        try:
+            # Get parameters
+            center = (self.center_x.value(), self.center_y.value(), self.center_z.value())
+            size = self.size_spin.value()
+            speed = self.speed_spin.value()
+            num_points = self.points_spin.value()
+            
+            # Generate waypoints based on template
+            if template_id in ['circle']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, center=center, radius=size, speed=speed, num_points=num_points
+                )
+            elif template_id in ['spiral_ascending', 'spiral_descending']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, center=center, end_radius=size, speed=speed, num_points=num_points
+                )
+            elif template_id in ['ascend', 'descend']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, start_pos=center, height_change=size, speed=speed, num_points=num_points
+                )
+            elif template_id in ['sharp_turn_right', 'sharp_turn_left']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, start_pos=center, leg_length=size, speed=speed, num_points=num_points
+                )
+            elif template_id in ['s_curve_horizontal', 's_curve_vertical']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, start_pos=center, length=size*2, amplitude=size/2, speed=speed, num_points=num_points
+                )
+            elif template_id in ['c_curve_horizontal', 'c_curve_vertical']:
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, start_pos=center, radius=size, speed=speed, num_points=num_points
+                )
+            elif template_id == 'figure_eight':
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, center=center, radius=size, speed=speed, num_points=num_points
+                )
+            elif template_id == 'square':
+                waypoints = TrajectoryTemplates.get_template(
+                    template_id, center=center, side_length=size, speed=speed, num_points_per_side=num_points//4
+                )
+            else:
+                waypoints = TrajectoryTemplates.get_template(template_id, speed=speed)
+            
+            self.selected_waypoints = waypoints
+            self.accept()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to generate template: {str(e)}")
+
+
+class SaveTrajectoryDialog(QDialog):
+    """Dialog for saving current trajectory"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Save Trajectory")
+        self.setModal(True)
+        self.setMinimumWidth(500)
+        
+        layout = QVBoxLayout()
+        
+        # Title
+        title = QLabel("<h3>Save Current Trajectory</h3>")
+        layout.addWidget(title)
+        
+        # Form
+        form = QFormLayout()
+        
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("My Trajectory")
+        form.addRow("Name:", self.name_input)
+        
+        self.description_input = QTextEdit()
+        self.description_input.setPlaceholderText("Optional description...")
+        self.description_input.setMaximumHeight(100)
+        form.addRow("Description:", self.description_input)
+        
+        layout.addLayout(form)
+        
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+    
+    def get_name(self):
+        return self.name_input.text().strip() or "Unnamed Trajectory"
+    
+    def get_description(self):
+        return self.description_input.toPlainText().strip()
+
+
+class TrajectoryBrowserDialog(QDialog):
+    """Dialog for browsing and loading saved trajectories"""
+    
+    def __init__(self, storage, parent=None):
+        super().__init__(parent)
+        self.storage = storage
+        self.selected_trajectory = None
+        
+        self.setWindowTitle("Browse Saved Trajectories")
+        self.setModal(True)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
+        
+        layout = QVBoxLayout()
+        
+        # Title
+        title = QLabel("<h2>Saved Trajectories</h2>")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Table
+        self.table = QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["Name", "Waypoints", "Created", "Description"])
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.doubleClicked.connect(self.load_selected)
+        
+        # Set column widths
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        
+        layout.addWidget(self.table)
+        
+        # Refresh table
+        self.refresh_table()
+        
+        # Info label
+        info_label = QLabel("Double-click to load, or select and click Load button")
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(info_label)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        self.load_btn = QPushButton("Load")
+        self.load_btn.clicked.connect(self.load_selected)
+        button_layout.addWidget(self.load_btn)
+        
+        self.delete_btn = QPushButton("Delete")
+        self.delete_btn.clicked.connect(self.delete_selected)
+        button_layout.addWidget(self.delete_btn)
+        
+        self.refresh_btn = QPushButton("Refresh")
+        self.refresh_btn.clicked.connect(self.refresh_table)
+        button_layout.addWidget(self.refresh_btn)
+        
+        button_layout.addStretch()
+        
+        self.close_btn = QPushButton("Close")
+        self.close_btn.clicked.connect(self.reject)
+        button_layout.addWidget(self.close_btn)
+        
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def refresh_table(self):
+        """Refresh the trajectory list"""
+        trajectories = self.storage.list_trajectories()
+        
+        self.table.setRowCount(len(trajectories))
+        
+        for i, traj in enumerate(trajectories):
+            # Name
+            name_item = QTableWidgetItem(traj['name'])
+            name_item.setData(Qt.UserRole, traj['filepath'])
+            self.table.setItem(i, 0, name_item)
+            
+            # Waypoints count
+            wp_item = QTableWidgetItem(str(traj['num_waypoints']))
+            wp_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 1, wp_item)
+            
+            # Created date
+            created = traj['created_at'][:10] if traj['created_at'] else "Unknown"
+            date_item = QTableWidgetItem(created)
+            date_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 2, date_item)
+            
+            # Description
+            desc = traj['description'][:100] if traj['description'] else ""
+            desc_item = QTableWidgetItem(desc)
+            self.table.setItem(i, 3, desc_item)
+        
+        if len(trajectories) == 0:
+            self.table.setRowCount(1)
+            item = QTableWidgetItem("No saved trajectories found. Save a trajectory to see it here.")
+            item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(0, 0, item)
+            self.table.setSpan(0, 0, 1, 4)
+    
+    def load_selected(self):
+        """Load the selected trajectory"""
+        current_row = self.table.currentRow()
+        if current_row < 0 or self.table.rowCount() == 0:
+            return
+        
+        name_item = self.table.item(current_row, 0)
+        if not name_item:
+            return
+        
+        filepath = name_item.data(Qt.UserRole)
+        if not filepath:
+            return
+        
+        try:
+            self.selected_trajectory = self.storage.load_trajectory(filepath)
+            self.accept()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load trajectory: {str(e)}")
+    
+    def delete_selected(self):
+        """Delete the selected trajectory"""
+        current_row = self.table.currentRow()
+        if current_row < 0 or self.table.rowCount() == 0:
+            return
+        
+        name_item = self.table.item(current_row, 0)
+        if not name_item:
+            return
+        
+        filepath = name_item.data(Qt.UserRole)
+        if not filepath:
+            return
+        
+        name = name_item.text()
+        
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete '{name}'?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            if self.storage.delete_trajectory(filepath):
+                self.refresh_table()
+                self.statusBar().showMessage(f"Deleted '{name}'", 3000) if hasattr(self, 'statusBar') else None
+            else:
+                QMessageBox.warning(self, "Error", "Failed to delete trajectory")
+
+
 class DroneSimulationWindow(QMainWindow):
     """Main simulation window"""
     
@@ -405,6 +809,7 @@ class DroneSimulationWindow(QMainWindow):
         
         # Initialize components
         self.trajectory_generator = TrajectoryGenerator(dt=0.1)
+        self.trajectory_storage = TrajectoryStorage()  # For saving/loading trajectories
         # Camera disabled - uncomment below to re-enable
         # self.camera_sim = CameraSimulator()
         
@@ -685,6 +1090,38 @@ class DroneSimulationWindow(QMainWindow):
         
         waypoint_layout.addLayout(wp_btn_layout)
         
+        # Template and Save/Load buttons
+        template_btn_layout = QVBoxLayout()
+        template_btn_layout.setSpacing(6)
+        
+        self.template_btn = QPushButton("✨ Load Template")
+        self.template_btn.clicked.connect(self.load_template)
+        self.template_btn.setObjectName("templateButton")
+        self.template_btn.setMinimumHeight(38)
+        self.template_btn.setToolTip("Load pre-defined trajectory pattern")
+        template_btn_layout.addWidget(self.template_btn)
+        
+        # Save/Load buttons row
+        save_load_layout = QHBoxLayout()
+        save_load_layout.setSpacing(6)
+        
+        self.save_btn = QPushButton("💾 Save")
+        self.save_btn.clicked.connect(self.save_trajectory)
+        self.save_btn.setMinimumHeight(34)
+        self.save_btn.setObjectName("saveButton")
+        self.save_btn.setToolTip("Save current trajectory")
+        save_load_layout.addWidget(self.save_btn)
+        
+        self.load_btn = QPushButton("📂 Load")
+        self.load_btn.clicked.connect(self.browse_trajectories)
+        self.load_btn.setMinimumHeight(34)
+        self.load_btn.setObjectName("loadButton")
+        self.load_btn.setToolTip("Browse saved trajectories")
+        save_load_layout.addWidget(self.load_btn)
+        
+        template_btn_layout.addLayout(save_load_layout)
+        waypoint_layout.addLayout(template_btn_layout)
+        
         # Generate/Apply buttons layout
         gen_btn_layout = QVBoxLayout()
         gen_btn_layout.setSpacing(8)
@@ -821,6 +1258,31 @@ class DroneSimulationWindow(QMainWindow):
         # File Menu
         file_menu = menubar.addMenu("&File")
         
+        # Trajectory sub-menu
+        trajectory_menu = file_menu.addMenu("📁 Trajectory")
+        
+        save_traj_action = QAction("💾 Save Trajectory...", self)
+        save_traj_action.setShortcut("Ctrl+S")
+        save_traj_action.setStatusTip("Save current trajectory")
+        save_traj_action.triggered.connect(self.save_trajectory)
+        trajectory_menu.addAction(save_traj_action)
+        
+        load_traj_action = QAction("📂 Browse Trajectories...", self)
+        load_traj_action.setShortcut("Ctrl+O")
+        load_traj_action.setStatusTip("Browse and load saved trajectories")
+        load_traj_action.triggered.connect(self.browse_trajectories)
+        trajectory_menu.addAction(load_traj_action)
+        
+        trajectory_menu.addSeparator()
+        
+        template_action = QAction("✨ Load Template...", self)
+        template_action.setShortcut("Ctrl+T")
+        template_action.setStatusTip("Load pre-defined trajectory template")
+        template_action.triggered.connect(self.load_template)
+        trajectory_menu.addAction(template_action)
+        
+        file_menu.addSeparator()
+        
         exit_action = QAction("E&xit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.setStatusTip("Exit application")
@@ -865,7 +1327,7 @@ class DroneSimulationWindow(QMainWindow):
         """Show about dialog"""
         about_text = """
         <h2>Drone Trajectory Simulation Pro</h2>
-        <p><b>Version 2.0</b></p>
+        <p><b>Version 2.1</b></p>
         <p>A comprehensive ML-powered drone trajectory prediction system with 
         physics-based simulation, 3D visualization, and real-time inference capabilities.</p>
         <br>
@@ -875,6 +1337,8 @@ class DroneSimulationWindow(QMainWindow):
             <li>LSTM neural network prediction</li>
             <li>Real-time 3D visualization</li>
             <li>Dynamic waypoint modification</li>
+            <li>Save/Load trajectories</li>
+            <li>Pre-defined trajectory templates</li>
             <li>Multiple themes and visual options</li>
             <li>ONNX export for C++ integration</li>
         </ul>
@@ -882,6 +1346,90 @@ class DroneSimulationWindow(QMainWindow):
         <p><i>For documentation, see the README.md and other docs in the workspace folder.</i></p>
         """
         QMessageBox.about(self, "About Drone Simulation", about_text)
+    
+    def save_trajectory(self):
+        """Save current trajectory to file"""
+        if not self.user_waypoints:
+            QMessageBox.warning(self, "No Waypoints", 
+                              "Please add waypoints before saving a trajectory.")
+            return
+        
+        dialog = SaveTrajectoryDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            name = dialog.get_name()
+            description = dialog.get_description()
+            
+            try:
+                filepath = self.trajectory_storage.save_trajectory(
+                    self.user_waypoints,
+                    name,
+                    description
+                )
+                QMessageBox.information(self, "Success", 
+                                      f"Trajectory saved successfully!\n\nFile: {os.path.basename(filepath)}")
+                self.statusBar().showMessage(f"Saved trajectory: {name}", 3000)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to save trajectory: {str(e)}")
+    
+    def browse_trajectories(self):
+        """Browse and load saved trajectories"""
+        dialog = TrajectoryBrowserDialog(self.trajectory_storage, self)
+        if dialog.exec_() == QDialog.Accepted:
+            if dialog.selected_trajectory:
+                self.load_trajectory_from_data(dialog.selected_trajectory)
+    
+    def load_trajectory_from_data(self, trajectory_data):
+        """Load trajectory from loaded data"""
+        try:
+            waypoints = trajectory_data['waypoints']
+            name = trajectory_data.get('name', 'Loaded Trajectory')
+            
+            # Clear current waypoints
+            self.user_waypoints = []
+            
+            # Add loaded waypoints
+            for wp in waypoints:
+                self.user_waypoints.append(wp)
+            
+            # Update UI
+            self.update_waypoint_list()
+            self.update_user_waypoint_markers()
+            self.update_3d_scene()
+            
+            # Generate trajectory if auto-play is enabled
+            if self.auto_play_enabled:
+                self.generate_from_waypoints()
+            
+            self.statusBar().showMessage(f"Loaded trajectory: {name} ({len(waypoints)} waypoints)", 3000)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load trajectory: {str(e)}")
+    
+    def load_template(self):
+        """Load pre-defined trajectory template"""
+        dialog = TemplateSelectionDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            if dialog.selected_waypoints:
+                # Clear current waypoints
+                self.user_waypoints = []
+                
+                # Add template waypoints
+                for wp in dialog.selected_waypoints:
+                    self.user_waypoints.append(wp)
+                
+                # Update UI
+                self.update_waypoint_list()
+                self.update_user_waypoint_markers()
+                self.update_3d_scene()
+                
+                # Generate trajectory if auto-play is enabled
+                if self.auto_play_enabled:
+                    self.generate_from_waypoints()
+                
+                self.statusBar().showMessage(
+                    f"Loaded template with {len(dialog.selected_waypoints)} waypoints", 
+                    3000
+                )
     
     def switch_theme(self, theme):
         """Switch between white and black themes"""
